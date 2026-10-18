@@ -24,4 +24,9 @@
 .official-grid .wide { grid-column:1/-1; }
 .official-toggle { display:flex !important; align-items:center; gap:7px; margin-bottom:12px !important; }
 .official-result { border:1px solid #365070; border-radius:8px; padding:12px; margin-top:12px; color:#d7e6f6; background:#101a2d; white-space:pre-wrap; overflow-wrap:anywhere; }
+.official-candidates { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 14px; margin-bottom:13px; }
+.official-candidate { display:flex !important; align-items:flex-start; gap:8px; margin:0 !important; border:1px solid #30415f; padding:9px; border-radius:7px; overflow-wrap:anywhere; }
+.official-candidate input { margin-top:4px; }
+.official-candidate strong { color:#35e4e0; }
+.official-candidate small { display:block; color:#94abc4; }
 @media(max-width:640px) { .official-shell { padding:16px; } .official-grid { grid-template-columns:1fr; } .official-row,.official-buttons { flex-wrap:wrap; } .official-row input { flex-basis:100%; } }

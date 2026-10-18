@@ -487,6 +487,8 @@ class AutomationTests(unittest.TestCase):
         self.assertIn("未明确", rows[unknown_link]["remarks"])
         self.assertIn("详情页未能核对", rows[unreadable_link]["remarks"])
         self.assertEqual(rows[conflict_link]["submit"], "否")
+        self.assertEqual(rows[conflict_link]["recruitment_track"], "unknown")
+        self.assertIn("未明确", rows[conflict_link]["remarks"])
         controller.close()
 
     def test_saved_company_filter_blocks_before_application(self):

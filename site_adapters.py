@@ -111,6 +111,7 @@ DETAIL_METADATA_SELECTORS = {
         "experience": (".jobinfo__other-info-item:nth-of-type(2)",),
         "education": (".jobinfo__other-info-item:nth-of-type(3)",),
         "employment_type": (".job-type", "[data-job-type]"),
+        "recruitment_track": (".recruitment-track", "[data-recruitment-type]"),
     },
     "前程无忧": {
         "company": (".joblist-item-right .cname", ".company-name", ".com-name"),
@@ -119,6 +120,7 @@ DETAIL_METADATA_SELECTORS = {
         "experience": ("[data-field='jobYear']", ".job-year"),
         "education": ("[data-field='jobDegree']", ".job-degree"),
         "employment_type": ("[data-field='jobType']", ".job-type"),
+        "recruitment_track": (".recruitment-track", "[data-recruitment-type]"),
     },
     "应届生": {
         "company": (".left-detail-company",),
@@ -127,6 +129,7 @@ DETAIL_METADATA_SELECTORS = {
         "experience": (".job-year",),
         "education": (".job-degree",),
         "employment_type": (".job-type", "[data-job-type]"),
+        "recruitment_track": (".recruitment-track", "[data-recruitment-type]"),
     },
     "猎聘": {
         "company": (".company-info-box .company-name", "[data-nick='job-detail-company-info'] .ellipsis-1"),
@@ -135,6 +138,7 @@ DETAIL_METADATA_SELECTORS = {
         "experience": (".job-info-box .job-labels-box span:nth-child(1)",),
         "education": (".job-info-box .job-labels-box span:nth-child(2)",),
         "employment_type": (".job-type", "[data-job-type]"),
+        "recruitment_track": (".recruitment-track", "[data-recruitment-type]"),
     },
     "拉勾": {
         "company": ("[class*='company-name']", ".company-name"),
@@ -143,6 +147,7 @@ DETAIL_METADATA_SELECTORS = {
         "experience": (".job_request .experience", "[class*='experience']"),
         "education": (".job_request .education", "[class*='education']"),
         "employment_type": (".job-type", "[data-job-type]"),
+        "recruitment_track": (".recruitment-track", "[data-recruitment-type]"),
     },
     "牛客网": {
         "company": (".company-name", ".company-info"),
@@ -151,6 +156,7 @@ DETAIL_METADATA_SELECTORS = {
         "experience": (".job-exp",),
         "education": (".job-edu",),
         "employment_type": (".job-type", "[data-job-type]"),
+        "recruitment_track": (".recruitment-track", "[data-recruitment-type]"),
     },
 }
 
@@ -226,7 +232,7 @@ class EmbeddedSitePage:
           const visible=e=>!!(e&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden');
           const text=e=>(e.innerText||e.textContent||'').trim();
           const body=(document.body&&document.body.innerText||'').slice(0,12000);
-          if(/安全验证|访问验证|您的访问被阻断|正在验证连接安全性/.test(body)) return 'verification';
+          if(/安全验证|访问验证|您的访问被阻断|正在验证连接安全性|为了更好的访问体验，请进行验证/.test(body)) return 'verification';
           if(/应届生求职登录/.test(body)) return 'logged_out';
           const login=Array.from(document.querySelectorAll(SEL)).filter(visible)
             .some(e=>/登录|注册/.test(text(e)));
@@ -323,10 +329,7 @@ class EmbeddedSitePage:
             const t=e&&(e.innerText||e.textContent||'').trim();if(t)return t;}return '';};
           return Array.from(document.querySelectorAll(CARDS)).map(card=>{
             const a=Array.from(card.querySelectorAll('a[href]')).find(a=>/jobdetail|job_detail|\\/job\\/|\\/jobs\\/|\\/a\\//.test(a.href));
-            const kind=SITE==='牛客网' ? (/\\/jobs\\/intern\\//.test(location.pathname)?'实习':
-              /\\/jobs\\/fulltime\\//.test(location.pathname)?'全职':
-              pick(card,['.job-type','[data-job-type]'])) :
-              pick(card,['.job-type','[data-job-type]','[class*=job-type]']);
+            const kind=pick(card,['.job-type','[data-job-type]','[class*=job-type]']);
             const track=pick(card,['.recruitment-track','[data-recruitment-type]']);
             return {title:pick(card,SEL.title),company:pick(card,SEL.company),
               area:pick(card,SEL.area),salary:pick(card,SEL.salary),
@@ -355,7 +358,7 @@ class EmbeddedSitePage:
           const buttons=Array.from(document.querySelectorAll('button,a')).filter(visible)
             .map(e=>({text:(e.innerText||'').trim(),selector:e.tagName.toLowerCase()+
               (e.className&&typeof e.className==='string'?'.'+e.className.trim().split(/\\s+/).slice(0,3).join('.'): '')}))
-            .filter(x=>/投递|申请|简历|登录|验证|下一页/.test(x.text)&&x.text.length<30)
+            .filter(x=>/^(立即投递|立即申请|申请职位|投递简历|投简历|确认投递|投递|发送|已投递|已申请|上传简历|选择简历|我的简历|登录|注册|下一页)$/.test(x.text))
             .slice(0,20);
           const dialogs=Array.from(document.querySelectorAll('.a-modal,.deliver-greeting-modal,.el-dialog,.operate-popup,.ant-modal,.position-modal,[role=dialog]'))
             .filter(visible).map(d=>({
@@ -363,14 +366,20 @@ class EmbeddedSitePage:
               resumePrompt:/请选择.*简历|选择简历/.test(d.innerText||''),
               success:/投递成功|申请成功/.test(d.innerText||''),
               enterpriseQuestions:/需补充企业要求的信息/.test(d.innerText||''),
-              selectedRadio:d.querySelectorAll('input[type=radio]:checked,[aria-checked=true]').length
+              resumeChoices:d.querySelectorAll('input[type=radio],[role=radio],.resume-item,.a-attachment-select__item').length,
+              selectedRadio:d.querySelectorAll('input[type=radio]:checked,[aria-checked=true],.resume-item.active,.resume-item.selected,.a-attachment-select__item--active').length,
+              actionButtons:Array.from(d.querySelectorAll('button')).filter(visible)
+                .map(b=>(b.innerText||'').trim()).filter(t=>/^(立即申请|立即投递|投递简历|发送|确认投递|确定|下一步)$/.test(t)).slice(0,8)
             })).slice(0,5);
+          const successMarkers=Array.from(document.querySelectorAll('h1,h2,h3,strong,span,div'))
+            .filter(e=>visible(e)&&e.children.length===0&&
+              /^(投递成功|申请成功|已向对方发送简历和打招呼语)$/.test((e.innerText||'').trim())).length;
           const url=new URL(location.href);
           return {host:url.hostname,path:url.pathname,cardCount:count(CARDS),
             applyButtonCount:count(APPLY),detailCount:count(DETAIL),
             fields:fields,firstCardLinkHost:detailLink?new URL(detailLink.href).hostname:'',
             firstCardLinkPath:detailLink?new URL(detailLink.href).pathname:'',
-            buttons:buttons,dialogs:dialogs,
+            buttons:buttons,dialogs:dialogs,successMarkers:successMarkers,
             keywordInputCount:count('#keywordInput,.query-sug__input,.query-search__content-input'),
             cityInputCount:count('.s-region__search input')};
         })()""".replace("CARDS", _js(self.site.cards)).replace("APPLY", _js(self.site.apply))
@@ -415,18 +424,19 @@ class EmbeddedSitePage:
           const visible=e=>!!(e&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden');
           const text=e=>(e.innerText||e.textContent||'').trim();
           const body=(document.body&&document.body.innerText||'').slice(0,20000);
-          if(/安全验证|访问验证|您的访问被阻断/.test(body))return 'verification';
+          if(/安全验证|访问验证|您的访问被阻断|为了更好的访问体验，请进行验证/.test(body))return 'verification';
           if(/今日投递太多|已超过上限|已达到上限/.test(body))return 'daily_limit';
           if(/请完善简历/.test(body))return 'needs_resume';
           if(/需补充企业要求的信息/.test(body))return 'needs_confirmation';
           const buttons=Array.from(document.querySelectorAll(APPLY)).filter(visible);
-          if(buttons.length===1&&/已申请|已投递/.test(text(buttons[0])))return 'sent';
+          if(buttons.filter(b=>/已申请|已投递|已投简历/.test(text(b))).length===1)return 'sent';
           const dialogs=Array.from(document.querySelectorAll(DIALOGS)).filter(visible);
           if(dialogs.some(d=>/请选择.*简历|选择简历|选择附件简历|确认投递|投递确认|确认申请|打招呼/.test(text(d))))
             return 'needs_confirmation';
           if(dialogs.some(d=>/投递成功|申请成功|已向对方发送简历/.test(text(d))))return 'sent';
           if(Array.from(document.querySelectorAll('h1,h2,h3,strong,span,div')).some(e=>
-            visible(e)&&text(e)==='投递成功'&&e.children.length===0))return 'sent';
+            visible(e)&&e.children.length===0&&
+            /^(投递成功|申请成功|已向对方发送简历和打招呼语)$/.test(text(e))))return 'sent';
           return 'unknown';
         })()""".replace("APPLY", _js(self.site.apply)).replace("DIALOGS", _js(
             ".a-modal,.deliver-greeting-modal,[role=dialog]" if self.site.name == "智联招聘"
@@ -515,12 +525,18 @@ class EmbeddedSitePage:
                         "reason": "页面显示此前已申请；本次未重复投递"}
             script = """(() => {
               const visible=e=>!!(e&&e.getClientRects().length&&!e.disabled);
-              const els=Array.from(document.querySelectorAll(APPLY)).filter(e=>visible(e)&&
-                /立即投递|申请职位|立即申请|投递简历|^投递$/.test((e.innerText||e.textContent||'').trim()));
+              const candidates=Array.from(document.querySelectorAll(APPLY)).filter(visible);
+              if(candidates.some(e=>/绑定官网账号并投递|前往官网投递/.test((e.innerText||e.textContent||'').trim())))
+                return {state:'external'};
+              const els=candidates.filter(e=>
+                /立即投递|申请职位|立即申请|投递简历|^投简历$|^投递$/.test((e.innerText||e.textContent||'').trim()));
               if(els.length!==1)return {state:'unavailable',count:els.length};
               els[0].click();return {state:'clicked'};
             })()""".replace("APPLY", _js(self.site.apply))
             click = self._window().run_js(script)
+            if isinstance(click, dict) and click.get("state") == "external":
+                return {"state": "unavailable", "clicked": False,
+                        "reason": "该职位需要绑定企业官网账号；请核对岗位网址后使用企业官网投递助手"}
             if not isinstance(click, dict) or click.get("state") != "clicked":
                 return {"state": "unavailable", "clicked": False,
                         "reason": "未找到唯一的投递按钮；请检查网站当前页面"}
@@ -574,12 +590,18 @@ class SiteDetailTab:
             for(const selector of options){
               const nodes=Array.from(document.querySelectorAll(selector)).filter(visible);
               if(nodes.length!==1)continue;
-              const value=(nodes[0].innerText||nodes[0].textContent||'').trim();
+              const value=(nodes[0].innerText||nodes[0].textContent||
+                (field==='recruitment_track'&&nodes[0].getAttribute('data-recruitment-type'))||'').trim();
               if(value&&value.length<=80){result[field]=value;break;}
             }
           }
+          if(SITE==='牛客网'&&!result.recruitment_track){
+            const title=document.title||'';
+            const campus=/校招/.test(title),social=/社招/.test(title);
+            if(campus!==social)result.recruitment_track=campus?'校招':'社招';
+          }
           return result;
-        })()""".replace("SEL", _js(selectors))
+        })()""".replace("SEL", _js(selectors)).replace("SITE", _js(self.site.name))
         result = self.window.run_js(script)
         return ({field: str(result.get(field) or "").strip() for field in selectors}
                 if isinstance(result, dict) else {})

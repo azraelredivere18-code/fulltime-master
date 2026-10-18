@@ -20,7 +20,7 @@ from urllib.parse import urlsplit
 from backend import LocalStore, china_day
 
 
-VERSION = "0.11.0"
+VERSION = "0.12.0"
 WINDOWS = {
     "index": ("全职高手", "index.html", 660, 760),
     "setting": ("设置", "setting.html", 1120, 760),
@@ -167,6 +167,36 @@ class WindowAPI(LocalStore):
     def get_official_profile(self) -> dict[str, str]:
         from official_apply import OfficialProfileStore
         return OfficialProfileStore(self._manager.data_dir / "official_profile.dpapi").load()
+
+    def preview_official_resume_import(self, source: str = "selected") -> dict:
+        import zipfile
+        from resume_import import extract_resume_candidates
+        if source == "selected":
+            selected = self.get_apply_config("resume_file")
+        elif source == "browse":
+            selected = self.get_file_path(["简历 (*.pdf;*.docx)"])
+        else:
+            return {"state": "invalid", "reason": "简历来源无效"}
+        if not selected:
+            return {"state": "cancelled", "reason": "尚未选择简历文件"}
+        file = Path(str(selected))
+        if file.suffix.lower() not in {".pdf", ".docx"} or not file.is_file():
+            return {"state": "invalid", "reason": "请选择可读取的 PDF 或 DOCX 简历"}
+        if file.stat().st_size > 20 * 1024 * 1024:
+            return {"state": "invalid", "reason": "简历文件超过 20 MB，请选较小的 PDF 或 DOCX"}
+        try:
+            if file.suffix.lower() == ".docx":
+                with zipfile.ZipFile(file) as archive:
+                    if sum(info.file_size for info in archive.infolist()) > 50 * 1024 * 1024:
+                        return {"state": "invalid", "reason": "简历解压内容过大"}
+            else:
+                from pypdf import PdfReader
+                if len(PdfReader(str(file)).pages) > 30:
+                    return {"state": "invalid", "reason": "简历超过 30 页，请选择较短版本"}
+            result = extract_resume_candidates(self.extract_resume_text(file))
+        except Exception:
+            return {"state": "error", "reason": "简历读取失败：请检查文件是否损坏或是否为扫描图片"}
+        return {"state": "preview", "filename": file.name, **result}
 
     def save_official_profile(self, profile: dict[str, str]) -> bool:
         from official_apply import OfficialProfileStore

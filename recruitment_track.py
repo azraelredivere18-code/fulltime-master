@@ -15,12 +15,17 @@ _LABEL = re.compile(r"(?:招聘(?:渠道|类别|类型)|招录类型|招聘项�
 def recruitment_track(item: Mapping[str, Any]) -> str:
     """Return a track only when the listing itself supplies direct evidence."""
     direct = " ".join(str(item.get(key) or "") for key in
-                      ("recruitment_track", "employment_type", "title", "category"))
-    campus, social = bool(_CAMPUS.search(direct)), bool(_SOCIAL.search(direct))
+                      ("employment_type", "title", "category"))
+    explicit = str(item.get("recruitment_track") or "").strip().lower()
+    if explicit == "conflict":
+        return "unknown"
+    campus = explicit in {"campus", "校招", "校园招聘"} or bool(_CAMPUS.search(direct))
+    social = explicit in {"social", "社招", "社会招聘"} or bool(_SOCIAL.search(direct))
     for key in ("summary", "description"):
         for match in _LABEL.finditer(str(item.get(key) or "")):
-            campus = campus or bool(_CAMPUS.search(match.group(1)))
-            social = social or bool(_SOCIAL.search(match.group(1)))
+            label = match.group(1).strip().lower()
+            campus = campus or label == "campus" or bool(_CAMPUS.search(label))
+            social = social or label == "social" or bool(_SOCIAL.search(label))
     path = urlsplit(str(item.get("link") or "")).path.lower()
     if re.search(r"/(campus|school-recruit|graduate)(?:/|$)", path):
         campus = True

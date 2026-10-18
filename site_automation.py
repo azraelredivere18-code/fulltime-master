@@ -26,6 +26,7 @@ def parse_site_card(card: Any, site: Site) -> dict[str, str] | None:
         "experience": _job_tag(str(card.get("experience") or ""), "experience"),
         "education": _job_tag(str(card.get("education") or ""), "education"),
         "employment_type": str(card.get("employment_type") or "").strip(),
+        "recruitment_track": str(card.get("recruitment_track") or "").strip(),
         "hr_title": "", "activity": "",
         "summary": str(card.get("summary") or "").strip(),
         "link": link,

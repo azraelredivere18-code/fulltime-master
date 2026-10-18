@@ -163,9 +163,12 @@ def main() -> None:
                 official_result = official_window.evaluate_js("""({
                     fields: document.querySelectorAll('#profile-fields [data-key]').length,
                     bridge: typeof window.pywebview.api.save_official_profile,
+                    importBridge: typeof window.pywebview.api.preview_official_resume_import,
+                    importButtons: document.querySelectorAll('#import-selected-resume,#import-file-resume').length,
                     url: !!document.querySelector('#official-url')
                 })""")
-                if official_result != {"fields": 20, "bridge": "function", "url": True}:
+                if official_result != {"fields": 20, "bridge": "function", "importBridge": "function",
+                                       "importButtons": 2, "url": True}:
                     raise AssertionError(f"Official application window failed: {official_result}")
                 mode_ui = window.evaluate_js("document.querySelector('#start-apply').innerText")
                 if not mode_ui.startswith("开始自动投递"):

@@ -1,14 +1,55 @@
+import json
+import shutil
+import subprocess
 import tempfile
 import sqlite3
 import unittest
 from pathlib import Path
 
 from backend import LocalStore
-from site_adapters import SITES, valid_site_url
+from site_adapters import EmbeddedSitePage, SITES, SiteDetailTab, valid_site_url
 from site_automation import SiteAutomationController, parse_site_card
 
 
 class SiteAdapterTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which("node"), "Node required for DOM regression")
+    def test_niuke_route_does_not_invent_full_time_and_detail_title_marks_track(self):
+        class Browser:
+            script = ""
+            def run_js(self, script):
+                self.script = script
+                return []
+        browser = Browser()
+        manager = type("Manager", (), {"current_browser_window": lambda self: browser})()
+        site = SITES["牛客网"]
+        EmbeddedSitePage(manager, site).eles("css:" + site.cards)
+        harness = """
+          const fs=require('fs');const script=fs.readFileSync(0,'utf8');
+          global.location={pathname:'/jobs/fulltime/center'};
+          const text=value=>({innerText:value});
+          const card={querySelector:s=>({'.job-name':text('运营专员'),
+            '.company-name':text('甲公司'),'.job-city':text('上海')})[s]||null,
+            querySelectorAll:s=>s==='a[href]'?[{href:'https://www.nowcoder.com/jobs/detail/123'}]:[]};
+          global.document={querySelectorAll:s=>s==='.job-card-item'?[card]:[]};
+          process.stdout.write(JSON.stringify(eval(script)));
+        """
+        result = subprocess.run([shutil.which("node"), "-e", harness], input=browser.script,
+                                text=True, encoding="utf-8", capture_output=True, check=True)
+        self.assertEqual(json.loads(result.stdout)[0]["employment_type"], "")
+
+        detail = SiteDetailTab(browser, site)
+        detail.metadata()
+        harness = """
+          const fs=require('fs');const script=fs.readFileSync(0,'utf8');
+          global.document={title:TITLE,querySelectorAll:()=>[]};
+          process.stdout.write(JSON.stringify(eval(script)));
+        """
+        for title, expected in (("开发工程师_某公司社招_牛客网", "社招"),
+                                ("校招社招混合招聘_牛客网", "")):
+            result = subprocess.run([shutil.which("node"), "-e", harness.replace("TITLE", json.dumps(title))],
+                                    input=browser.script, text=True, encoding="utf-8", capture_output=True, check=True)
+            self.assertEqual(json.loads(result.stdout)["recruitment_track"], expected)
+
     def test_legacy_slot_table_migrates_to_boss_ledger(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "old.sqlite3"

@@ -15,6 +15,8 @@ class RecruitmentTrackTests(unittest.TestCase):
         self.assertEqual(recruitment_track({"title": "校招/社招岗位"}), "unknown")
         self.assertEqual(recruitment_track({"title": "Social Media Specialist"}), "unknown")
         self.assertEqual(recruitment_track({"title": "Campus Ambassador"}), "unknown")
+        self.assertEqual(recruitment_track({"title": "Campus Ambassador", "recruitment_track": "campus"}), "campus")
+        self.assertEqual(recruitment_track({"title": "校招工程师", "recruitment_track": "conflict"}), "unknown")
         self.assertEqual(recruitment_track({"title": "Social Recruitment Engineer"}), "social")
         self.assertEqual(recruitment_track({"title": "Campus Recruitment Engineer"}), "campus")
         self.assertEqual(recruitment_track({"title": "社招开发", "description": "招聘类型：校园招聘"}), "unknown")

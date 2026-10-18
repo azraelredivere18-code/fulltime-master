@@ -522,7 +522,11 @@ class AutomationController:
                 if metadata.get("employment_type"):
                     item["employment_type"] = str(metadata["employment_type"])
                 if metadata.get("recruitment_track"):
-                    item["recruitment_track"] = str(metadata["recruitment_track"])
+                    listed = recruitment_track({"recruitment_track": item.get("recruitment_track")})
+                    detailed = recruitment_track({"recruitment_track": metadata["recruitment_track"]})
+                    item["recruitment_track"] = (
+                        "conflict" if listed != "unknown" and detailed != "unknown" and
+                        listed != detailed else str(metadata["recruitment_track"]))
                 if detail:
                     item["description"] = detail
             if existing:

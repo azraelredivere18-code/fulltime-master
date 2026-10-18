@@ -29,6 +29,7 @@ let profileReady = false;
 let editVersion = 0;
 let previewReady = false;
 let lastPageUrl = '';
+let pendingImport = [];
 byId('fill-form').disabled = true;
 byId('save-profile').disabled = true;
 fields.addEventListener('input',() => {
@@ -46,6 +47,50 @@ const call = async (name,...args) => {
 function profileFromForm() {
     return Object.fromEntries(Array.from(fields.querySelectorAll('[data-key]'))
         .map(input => [input.dataset.key,input.value.trim()]));
+}
+function renderResumeCandidates(result) {
+    const preview = byId('resume-preview');
+    const list = byId('resume-candidates');
+    list.replaceChildren();
+    pendingImport = [];
+    if (!result || result.state !== 'preview') {
+        preview.hidden = true;
+        setStatus('resume-import-status',result ? result.reason : '简历导入失败。');
+        return;
+    }
+    pendingImport = result.candidates || [];
+    for (const candidate of pendingImport) {
+        const input = byId('profile-' + candidate.field);
+        if (!input) continue;
+        const row = document.createElement('label');
+        row.className = 'official-candidate';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.dataset.field = candidate.field;
+        checkbox.checked = !!candidate.default_selected && !input.value.trim();
+        checkbox.dataset.originalValue = input.value;
+        const body = document.createElement('span');
+        const title = document.createElement('strong');
+        title.textContent = names[candidate.field] || candidate.field;
+        const value = document.createElement('span');
+        value.textContent = ' · ' + (candidate.field === 'id_number' ?
+            '••••' + candidate.value.slice(-4) : candidate.value);
+        const note = document.createElement('small');
+        note.textContent = candidate.evidence + (input.value.trim() ? ' · 已有资料，默认不覆盖' : '') +
+            (candidate.field === 'id_number' ? ' · 敏感字段，需单独勾选' : '');
+        body.append(title,value,note);
+        row.append(checkbox,body);
+        list.append(row);
+    }
+    preview.hidden = !pendingImport.length;
+    setStatus('resume-import-status',result.filename + '：识别到 ' + pendingImport.length + ' 个待核对字段。' +
+        (result.warnings || []).join('；'));
+}
+async function previewResume(source) {
+    if (!profileReady) { setStatus('resume-import-status','请等待个人资料加载。'); return; }
+    byId('resume-preview').hidden = true;
+    setStatus('resume-import-status','正在本机读取简历…');
+    renderResumeCandidates(await call('preview_official_resume_import',source));
 }
 function showFormResult(result, preview) {
     if (!result) return;
@@ -118,6 +163,29 @@ byId('save-profile').addEventListener('click',async () => {
         '保存失败。');
     previewReady = false;
     byId('fill-form').disabled = true;
+});
+byId('import-selected-resume').addEventListener('click',() => previewResume('selected'));
+byId('import-file-resume').addEventListener('click',() => previewResume('browse'));
+byId('apply-resume-candidates').addEventListener('click',() => {
+    let applied = 0;
+    let changedSincePreview = 0;
+    for (const candidate of pendingImport) {
+        const checkbox = byId('resume-candidates').querySelector(
+            'input[data-field="' + candidate.field + '"]');
+        const input = byId('profile-' + candidate.field);
+        if (!checkbox || !checkbox.checked || !input) continue;
+        if (input.value !== checkbox.dataset.originalValue) {
+            changedSincePreview++;
+            continue;
+        }
+        input.value = candidate.value;
+        input.dispatchEvent(new Event('input',{bubbles:true}));
+        applied++;
+    }
+    byId('resume-preview').hidden = true;
+    pendingImport = [];
+    setStatus('resume-import-status','已填入 ' + applied + ' 项；请核对资料并点击“加密保存资料”。' +
+        (changedSincePreview ? '另有 ' + changedSincePreview + ' 项在预览后被编辑，未覆盖。' : ''));
 });
 byId('clear-profile').addEventListener('click',async () => {
     if (!window.confirm('清空本机保存的个人资料？')) return;

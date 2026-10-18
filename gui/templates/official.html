@@ -30,7 +30,17 @@
 
     <section class="official-panel">
         <div class="official-heading"><h2>02 · 常用个人资料</h2><span>保存在本机当前 Windows 账户</span></div>
-        <p class="official-help">按需填写。身份证号默认不会快速填入网页；启用下方选项后才会填写。</p>
+        <p class="official-help">可从已选简历或本地 PDF／DOCX 提取字段。先核对预览并勾选，再填入下方资料表；导入不会自动保存，也不会打开招聘网站。</p>
+        <div class="official-buttons">
+            <button id="import-selected-resume" class="official-secondary" type="button">读取已选简历</button>
+            <button id="import-file-resume" class="official-secondary" type="button">选择本地简历</button>
+        </div>
+        <p id="resume-import-status" class="official-status" role="status"></p>
+        <div id="resume-preview" class="official-result" hidden>
+            <div id="resume-candidates" class="official-candidates"></div>
+            <button id="apply-resume-candidates" type="button">将勾选字段填入资料表</button>
+        </div>
+        <p class="official-help">按需修改资料。身份证号默认不会快速填入网页；启用下方选项后才会填写。</p>
         <form id="profile-form" autocomplete="off"><div id="profile-fields" class="official-grid"></div></form>
         <div class="official-buttons">
             <button id="save-profile" type="button">加密保存资料</button>
