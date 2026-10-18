@@ -43,7 +43,7 @@ def main() -> None:
                         '立即沟通</button><div id="receipt"></div>')
             elif self.path == "/resume":
                 html = ('<header><div class="user-nav">求职用户</div></header>'
-                        '<input type="file" accept=".pdf,.docx">'
+                        '<label>上传附件简历<input type="file" accept=".pdf,.docx"></label>'
                         '<div id="upload-status"></div><script>'
                         'document.querySelector("input").addEventListener("change", e => {'
                         'document.querySelector("#upload-status").innerText = '
@@ -151,7 +151,7 @@ def main() -> None:
                     noFilterMode: !document.querySelector('#work-mode option[value="filter_mode"]')
                 })""")
                 print(json.dumps({"main": main_result, "setting": setting_result}, ensure_ascii=False), flush=True)
-                if (main_result["options"] != 6 or main_result["modeOptions"] != 0
+                if (main_result["options"] != 7 or main_result["modeOptions"] != 0
                         or not main_result["notice"] or not setting_result["noFilterMode"]
                         or setting_result["employmentType"] != "full_time"):
                     raise AssertionError("GUI failed to load expected options")
