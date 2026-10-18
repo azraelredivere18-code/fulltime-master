@@ -9,13 +9,13 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
-STAGE = ROOT / "stage-0.10"
+STAGE = ROOT / "stage-0.11"
 TEMPLATES = ROOT / "gui" / "templates"
 
 
 def stage_assets() -> None:
     target = STAGE / "gui" / "templates"
-    for name in ("index.html", "setting.html", "record.html"):
+    for name in ("index.html", "setting.html", "record.html", "official.html"):
         destination = target / name
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(TEMPLATES / name, destination)
@@ -52,6 +52,8 @@ def main() -> int:
         "--hidden-import", "site_adapters",
         "--hidden-import", "site_automation",
         "--hidden-import", "employment_type",
+        "--hidden-import", "recruitment_track",
+        "--hidden-import", "official_apply",
         "--hidden-import", "scheduler",
         "--collect-all", "webview",
         str(ROOT / "app.py"),

@@ -80,7 +80,8 @@ class SiteAutomationController(AutomationController):
         if not hasattr(self._page, "navigate_search"):
             raise RuntimeError("网站搜索页导航失败")
         navigated = (self._page.navigate_search(keyword, city, code,
-                                                str(task.get("employment_type") or "full_time"))
+                                                str(task.get("employment_type") or "full_time"),
+                                                str(task.get("recruitment_track") or "all"))
                      if self.site.name == "牛客网" else
                      self._page.navigate_search(keyword, city, code))
         if not navigated:

@@ -8,6 +8,8 @@ function safeRecordText(value) {
 }
 
 function recordStatus(value, row) {
+    if (row.attempt_state === 'manual_confirmed')
+        return '<span class="record-status confirmed">手动确认</span>';
     if (value === '是') return '<span class="record-status confirmed">已确认</span>';
     if (row.attempt_state === 'pending' || row.attempt_state === 'unknown')
         return '<span class="record-status pending">待核实</span>';
@@ -16,7 +18,10 @@ function recordStatus(value, row) {
 
 function recordDetail(index, row) {
     var fields = [['职位', row.title], ['岗位类型', row.employment_type === 'internship' ? '实习' :
-        row.employment_type === 'full_time' ? '全职' : '待确认'], ['公司', row.company], ['地区', row.area],
+        row.employment_type === 'full_time' ? '全职' : '待确认'],
+        ['招聘渠道', row.recruitment_track === 'campus' ? '校招' :
+            row.recruitment_track === 'social' ? '社招' : '待确认'],
+        ['公司', row.company], ['地区', row.area],
         ['搜索城市', row.search_city], ['薪资', row.salary], ['经验', row.experience],
         ['学历', row.education], ['任务 ID', row.task_id], ['匹配度', row.match_degree],
         ['投递时间', row.submit_time], ['备注', row.remarks]];
@@ -27,12 +32,15 @@ function recordDetail(index, row) {
 }
 
 function updateRecordSummary(rows) {
-    var confirmed = rows.filter(function (row) { return row.submit === '是'; }).length;
+    var confirmed = rows.filter(function (row) {
+        return row.submit === '是' && row.attempt_state !== 'manual_confirmed';
+    }).length;
+    var manual = rows.filter(function (row) { return row.attempt_state === 'manual_confirmed'; }).length;
     var pending = rows.filter(function (row) {
         return row.attempt_state === 'pending' || row.attempt_state === 'unknown';
     }).length;
     $('#record-summary').text('共 ' + rows.length + ' 条职位记录 · 已确认 ' +
-        confirmed + ' 条 · 待核实 ' + pending + ' 条。点击行首可查看完整字段。');
+        confirmed + ' 条 · 手动确认 ' + manual + ' 条 · 待核实 ' + pending + ' 条。点击行首可查看完整字段。');
 }
 
 $(function () {
@@ -163,6 +171,15 @@ $(function () {
                     formatter: function (value) {
                         return safeRecordText(value === 'internship' ? '实习' :
                             value === 'full_time' ? '全职' : '待确认');
+                    }
+                }, {
+                    field: 'recruitment_track',
+                    title: '招聘渠道',
+                    sortable: true,
+                    filterControl: 'select',
+                    formatter: function (value) {
+                        return safeRecordText(value === 'campus' ? '校招' :
+                            value === 'social' ? '社招' : '待确认');
                     }
                 }, {
                     field: 'company',

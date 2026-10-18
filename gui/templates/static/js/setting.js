@@ -49,6 +49,7 @@ function getTaskForm() {
         resume: $('#resume-path').val().trim(),
         match_degree: $('#match-degree').val(),
         employment_type: $('#employment-type').val(),
+        recruitment_track: $('#recruitment-track').val(),
         platform: $('#platform').val().join(',')
     };
     return data;
@@ -69,10 +70,12 @@ function tasksTableAddRow(task, task_id = null) {
             </td>
             <td>${escapeHtml(task.match_degree)}</td>
             <td>${escapeHtml(task.employment_type === 'internship' ? '实习' : '全职')}</td>
+            <td>${escapeHtml(task.recruitment_track === 'campus' ? '校招' : task.recruitment_track === 'social' ? '社招' : '不限')}</td>
             <td>
                 <span class="d-none row-id">${escapeHtml(task_id ? task_id : task.id)}</span>
                 <span class="d-none platform">${escapeHtml(task.platform)}</span>
                 <span class="d-none employment-type">${escapeHtml(task.employment_type || 'full_time')}</span>
+                <span class="d-none recruitment-track">${escapeHtml(task.recruitment_track || 'all')}</span>
                 <span class="icon-up"></span>
                 <span class="icon-down"></span>
                 <span class="icon-delete"></span>
@@ -96,6 +99,7 @@ function tasksTableAddRow(task, task_id = null) {
         $('#resume-path').val($(this).find('td:nth-child(7) .resume').text())
         $('#match-degree').val($(this).find('td:nth-child(8)').text())
         $('#employment-type').val($(this).find('.employment-type').text() || 'full_time')
+        $('#recruitment-track').val($(this).find('.recruitment-track').text() || 'all')
         $('#alter-task').removeClass('d-none')
     })
 }
@@ -896,8 +900,10 @@ $(function () {
                 curr_task.find('td:nth-child(7) .resume').text(resume)
                 curr_task.find('td:nth-child(8)').text(task.match_degree)
                 curr_task.find('td:nth-child(9)').text(task.employment_type === 'internship' ? '实习' : '全职')
+                curr_task.find('td:nth-child(10)').text(task.recruitment_track === 'campus' ? '校招' : task.recruitment_track === 'social' ? '社招' : '不限')
                 curr_task.find('.platform').text(task.platform)
                 curr_task.find('.employment-type').text(task.employment_type)
+                curr_task.find('.recruitment-track').text(task.recruitment_track)
             }
             })
             $('#resume-tip').text('')

@@ -243,10 +243,13 @@ class EmbeddedSitePage:
         return result if result in {"logged_in", "logged_out", "verification"} else "unknown"
 
     def navigate_search(self, keyword: str, city: str, city_code: str,
-                        employment_type: str = "full_time") -> bool:
+                        employment_type: str = "full_time",
+                        recruitment_track: str = "all") -> bool:
         if self.site.name == "牛客网":
-            segment = "intern" if employment_type == "internship" else "fulltime"
-            self.get(f"https://www.nowcoder.com/jobs/{segment}/center")
+            url = ("https://www.nowcoder.com/jobs/school/jobs" if recruitment_track == "campus"
+                   else "https://www.nowcoder.com/jobs/intern/center" if employment_type == "internship"
+                   else "https://www.nowcoder.com/jobs/fulltime/center")
+            self.get(url)
             result = self._window().run_js("""(() => {
               const input=document.querySelector('.input-search-filter .el-input__inner');
               if(!input||!input.getClientRects().length)return false;
@@ -320,12 +323,15 @@ class EmbeddedSitePage:
             const t=e&&(e.innerText||e.textContent||'').trim();if(t)return t;}return '';};
           return Array.from(document.querySelectorAll(CARDS)).map(card=>{
             const a=Array.from(card.querySelectorAll('a[href]')).find(a=>/jobdetail|job_detail|\\/job\\/|\\/jobs\\/|\\/a\\//.test(a.href));
-            const kind=SITE==='牛客网' ? (/\\/jobs\\/intern\\//.test(location.pathname)?'实习':'全职') :
+            const kind=SITE==='牛客网' ? (/\\/jobs\\/intern\\//.test(location.pathname)?'实习':
+              /\\/jobs\\/fulltime\\//.test(location.pathname)?'全职':
+              pick(card,['.job-type','[data-job-type]'])) :
               pick(card,['.job-type','[data-job-type]','[class*=job-type]']);
+            const track=pick(card,['.recruitment-track','[data-recruitment-type]']);
             return {title:pick(card,SEL.title),company:pick(card,SEL.company),
               area:pick(card,SEL.area),salary:pick(card,SEL.salary),
               experience:pick(card,SEL.experience),education:pick(card,SEL.education),
-              employment_type:kind,
+              employment_type:kind,recruitment_track:track,
               hr_title:'',activity:'',summary:(card.innerText||'').trim(),link:a?a.href:''};
           });
         })()""".replace("CARDS", _js(self.site.cards)).replace("SEL", _js(selectors)).replace("SITE", _js(self.site.name))

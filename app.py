@@ -17,14 +17,15 @@ from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlsplit
 
-from backend import LocalStore
+from backend import LocalStore, china_day
 
 
-VERSION = "0.10.0"
+VERSION = "0.11.0"
 WINDOWS = {
     "index": ("全职高手", "index.html", 660, 760),
     "setting": ("设置", "setting.html", 1120, 760),
     "record": ("记录", "record.html", 1280, 780),
+    "official": ("企业官网投递助手", "official.html", 820, 840),
 }
 
 
@@ -159,6 +160,82 @@ class WindowAPI(LocalStore):
         self._manager.open_window("record")
         return True
 
+    def open_official_window(self) -> bool:
+        self._manager.open_window("official")
+        return True
+
+    def get_official_profile(self) -> dict[str, str]:
+        from official_apply import OfficialProfileStore
+        return OfficialProfileStore(self._manager.data_dir / "official_profile.dpapi").load()
+
+    def save_official_profile(self, profile: dict[str, str]) -> bool:
+        from official_apply import OfficialProfileStore
+        OfficialProfileStore(self._manager.data_dir / "official_profile.dpapi").save(profile)
+        self._manager.invalidate_official_preview()
+        return True
+
+    def clear_official_profile(self) -> bool:
+        from official_apply import OfficialProfileStore
+        OfficialProfileStore(self._manager.data_dir / "official_profile.dpapi").clear()
+        self._manager.invalidate_official_preview()
+        return True
+
+    def open_official_site(self, url: str) -> dict[str, str]:
+        try:
+            return self._manager.open_official_browser_window(url)
+        except Exception as exc:
+            return {"state": "error", "reason": str(exc)}
+
+    def official_page_status(self) -> dict[str, str]:
+        return self._manager.official_page_status()
+
+    def trust_current_official_site(self) -> dict[str, str]:
+        try:
+            return self._manager.trust_current_official_site()
+        except Exception as exc:
+            return {"state": "error", "reason": str(exc)}
+
+    def inspect_official_form(self) -> dict:
+        return self._official_form_action(fill=False)
+
+    def fill_official_form(self, include_id_number: bool = False) -> dict:
+        return self._official_form_action(fill=True, include_id_number=include_id_number)
+
+    def _official_form_action(self, *, fill: bool, include_id_number: bool = False) -> dict:
+        try:
+            profile = self.get_official_profile()
+            if not any(profile.values()):
+                return {"state": "empty_profile", "reason": "请先填写并加密保存个人资料"}
+            return self._manager.official_form_action(
+                profile, fill=fill, include_id_number=include_id_number)
+        except Exception as exc:
+            return {"state": "error", "reason": str(exc)}
+
+    def record_official_application(self, item: dict[str, str]) -> dict[str, str]:
+        if not isinstance(item, dict):
+            return {"state": "invalid", "reason": "请填写投递记录"}
+        title = str(item.get("title") or "").strip()[:200]
+        company = str(item.get("company") or "").strip()[:200]
+        area = str(item.get("area") or "").strip()[:100]
+        if not title or not company:
+            return {"state": "invalid", "reason": "请填写岗位和公司名称"}
+        status = self._manager.official_page_status()
+        if status["state"] != "ready":
+            return {"state": "wrong_site", "reason": "请先在已确认的官网页面核对投递结果"}
+        from official_apply import safe_record_url
+        link = safe_record_url(status["url"])
+        if any(row.get("source") == "企业官网" and row.get("link") == link and
+               row.get("title") == title and row.get("company") == company and row.get("submit") == "是"
+               for row in self.get_apply_record()):
+            return {"state": "duplicate", "reason": "此岗位已有官网手动投递记录"}
+        record_id = self.add_apply_record({
+            "source": "企业官网", "title": title, "company": company, "area": area,
+            "link": link, "submit": "是", "submit_time": datetime.now().isoformat(timespec="seconds"),
+            "application_day": china_day(), "attempt_state": "manual_confirmed",
+            "remarks": "用户手动确认官网投递；未由程序核验平台回执",
+        })
+        return {"state": "saved", "reason": "已记录为用户手动确认投递", "id": str(record_id)}
+
     def start_record_backfill(self) -> dict:
         return self._manager.start_record_backfill()
 
@@ -257,6 +334,10 @@ class WindowManager:
         self._lock = threading.RLock()
         self._windows: dict[str, WindowAPI] = {}
         self._browser_window = None
+        self._official_browser_window = None
+        self._official_trusted_host = ""
+        self._official_pending_url = ""
+        self._official_preview: dict | None = None
         self._detail_windows: set = set()
         self.controller = None
         self.scheduler = None
@@ -365,6 +446,8 @@ class WindowManager:
                 self.controller.close()
             elif kind == "index":
                 self.close_browser_window()
+            if kind == "index":
+                self.close_official_browser_window()
 
     def current_browser_window(self):
         with self._lock:
@@ -403,6 +486,128 @@ class WindowManager:
             self.close_browser_window()
             raise RuntimeError("内置浏览器未能加载")
         return window
+
+    def _on_official_browser_closed(self, window) -> None:
+        with self._lock:
+            if self._official_browser_window is window:
+                self._official_browser_window = None
+                self._official_trusted_host = ""
+                self._official_pending_url = ""
+                self._official_preview = None
+
+    def invalidate_official_preview(self) -> None:
+        with self._lock:
+            self._official_preview = None
+
+    def current_official_browser_window(self):
+        with self._lock:
+            window = self._official_browser_window
+            return window if window is not None and not window.events.closed.is_set() else None
+
+    def open_official_browser_window(self, value: str) -> dict[str, str]:
+        import webview
+        from official_apply import normalize_official_url
+
+        url = normalize_official_url(value)
+        if self.controller and self.controller.get_run_status()["running"]:
+            raise RuntimeError("请先停止自动投递任务，再打开企业官网")
+        host = urlsplit(url).hostname or ""
+        with self._lock:
+            self._official_preview = None
+            window = self.current_official_browser_window()
+            if window is None:
+                window = webview.create_window(
+                    "全职高手 · 企业官网", url=url, width=1200, height=850,
+                    min_size=(680, 480), js_api=None,
+                )
+                window.events.closed += lambda: self._on_official_browser_closed(window)
+                self._official_browser_window = window
+            else:
+                self._official_pending_url = url
+                window.load_url(url)
+                window.show()
+            self._official_trusted_host = host
+        if not window.events.loaded.wait(30):
+            raise RuntimeError("企业官网未能加载，请检查网址")
+        return self.official_page_status()
+
+    def official_page_status(self) -> dict[str, str]:
+        window = self.current_official_browser_window()
+        if window is None:
+            return {"state": "browser_closed", "url": "", "trusted_host": ""}
+        url = str(window.get_current_url() or "")
+        parsed = urlsplit(url)
+        host = self._official_trusted_host
+        if parsed.scheme != "https" or parsed.hostname != host:
+            state = "redirected"
+        elif self._official_pending_url and url != self._official_pending_url:
+            state = "loading"
+        else:
+            self._official_pending_url = ""
+            state = "ready"
+        return {"state": state, "url": url, "trusted_host": host}
+
+    def trust_current_official_site(self) -> dict[str, str]:
+        from official_apply import normalize_official_url
+        window = self.current_official_browser_window()
+        if window is None:
+            raise RuntimeError("请先打开企业官网")
+        current = normalize_official_url(str(window.get_current_url() or ""))
+        self._official_trusted_host = urlsplit(current).hostname or ""
+        self._official_pending_url = ""
+        self.invalidate_official_preview()
+        return self.official_page_status()
+
+    def official_form_action(self, profile: dict[str, str], *, fill: bool,
+                             include_id_number: bool = False) -> dict:
+        from official_apply import build_form_script
+        with self._lock:
+            status = self.official_page_status()
+            if status["state"] != "ready":
+                self._official_preview = None
+                return {"state": "wrong_site", "reason": "当前网址与已确认域名不一致，请核对后重新确认"}
+            window = self.current_official_browser_window()
+            if window is None:
+                return {"state": "browser_closed", "reason": "企业官网浏览器已关闭"}
+            stale = {"state": "stale_preview", "reason": "网页或个人资料已变化，请重新识别后填写"}
+            preview_script = build_form_script(profile, status["trusted_host"], fill=False)
+            if not fill:
+                result = window.run_js(preview_script)
+                self._official_preview = None
+                if isinstance(result, dict) and result.get("state") == "ok":
+                    self._official_preview = {
+                        "url": status["url"], "host": status["trusted_host"],
+                        "fingerprint": result.get("fingerprint"),
+                        "available": result.get("available"),
+                    }
+                return result if isinstance(result, dict) else {"state": "error", "reason": "表单识别未返回结果"}
+            preview = self._official_preview
+            if (not preview or preview["url"] != status["url"] or
+                    preview["host"] != status["trusted_host"]):
+                self._official_preview = None
+                return stale
+            check = window.run_js(preview_script)
+            if (not isinstance(check, dict) or check.get("state") != "ok" or
+                    check.get("fingerprint") != preview["fingerprint"] or
+                    check.get("available") != preview["available"]):
+                self._official_preview = None
+                return stale
+            selected = {key: value for key, value in profile.items()
+                        if key in preview["available"] and (key != "id_number" or include_id_number)}
+            self._official_preview = None
+            result = window.run_js(build_form_script(
+                selected, status["trusted_host"], fill=True,
+                expected_fingerprint=preview["fingerprint"]))
+            return result if isinstance(result, dict) else {"state": "error", "reason": "表单填写未返回结果"}
+
+    def close_official_browser_window(self) -> None:
+        with self._lock:
+            window, self._official_browser_window = self._official_browser_window, None
+            self._official_trusted_host = ""
+            self._official_pending_url = ""
+            self._official_preview = None
+        if window is not None and not window.events.closed.is_set():
+            window.destroy()
 
     def open_detail_window(self, url: str):
         import webview
@@ -496,12 +701,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.check:
         index = bundle_dir() / "gui" / "templates" / "index.html"
+        official = bundle_dir() / "gui" / "templates" / "official.html"
         required = [bundle_dir() / "config" / group / name
                     for group in ("boss", "zhilian", "qiancheng", "yjs", "liepin")
                     for name in ("code.json", "filter.json")]
         required.append(bundle_dir() / "config" / "lagou" / "filter.json")
         required.append(bundle_dir() / "config" / "niuke" / "filter.json")
-        if not index.is_file() or any(not file.is_file() for file in required):
+        if not index.is_file() or not official.is_file() or any(not file.is_file() for file in required):
             raise SystemExit("Bundled UI or platform configuration missing")
         print(f"{VERSION}: assets present")
         return 0

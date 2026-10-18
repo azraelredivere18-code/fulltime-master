@@ -113,6 +113,7 @@
                                 <th scope="col">AI匹配<br>简历</th>
                                 <th scope="col">匹配度</th>
                                 <th scope="col">岗位类型</th>
+                                <th scope="col">招聘渠道</th>
                                 <th scope="col">操作</th>
                             </tr>
                             </thead>
@@ -155,6 +156,17 @@
                                         <option value="internship">实习岗位</option>
                                     </select>
                                     <small class="form-text text-muted">实习任务仅投页面明确标注实习的职位；全职任务排除实习职位。</small>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="recruitment-track" class="col-sm-2 col-form-label col-form-label-sm text-right">招聘渠道</label>
+                                <div class="col-sm-5">
+                                    <select class="custom-select custom-select-sm" id="recruitment-track">
+                                        <option value="all" selected>不限渠道</option>
+                                        <option value="campus">仅校招</option>
+                                        <option value="social">仅社招</option>
+                                    </select>
+                                    <small class="form-text text-muted">选择校招或社招时，仅自动投递页面明确标注该渠道的岗位。</small>
                                 </div>
                             </div>
                             <div class="form-group row">

@@ -453,6 +453,42 @@ class AutomationTests(unittest.TestCase):
         self.assertEqual(controller.applied_count, 1)
         controller.close()
 
+    def test_campus_task_waits_for_explicit_detail_evidence_before_contact(self):
+        task = self.store.get_task("BOSS直聘")
+        task["recruitment_track"] = "campus"
+        self.store.update_task(task)
+        campus_link = "https://www.zhipin.com/job_detail/campus.html"
+        social_link = "https://www.zhipin.com/job_detail/social.html"
+        unknown_link = "https://www.zhipin.com/job_detail/unknown.html"
+        unreadable_link = "https://www.zhipin.com/job_detail/unreadable.html"
+        conflict_link = "https://www.zhipin.com/job_detail/conflict.html"
+        page = FakePage([
+            FakeCard("Python 开发", "甲公司", campus_link),
+            FakeCard("Python 社招开发", "乙公司", social_link),
+            FakeCard("Python 开发", "丙公司", unknown_link),
+            FakeCard("Python 校招开发", "丁公司", unreadable_link),
+            FakeCard("Python 校招开发", "戊公司", conflict_link),
+        ])
+        page.details[campus_link] = "招聘类型：校园招聘\n工作地点：上海"
+        page.details[social_link] = "招聘类型：社会招聘"
+        page.details[unknown_link] = "负责产品开发，应届生优先"
+        page.details[conflict_link] = "招聘类型：社会招聘"
+        calls = []
+        page.apply_job = lambda link: calls.append(link) or {"state": "sent"}
+        controller = AutomationController(self.store, config_dir=self.root / "config",
+                                          page_factory=lambda: page)
+        controller._page, controller._task, controller.mode = page, task, "apply_mode"
+        controller.scan_once()
+        controller.scan_once()
+        rows = {row["link"]: row for row in self.store.get_apply_record()}
+        self.assertEqual(calls, [campus_link])
+        self.assertEqual(rows[campus_link]["recruitment_track"], "campus")
+        self.assertEqual(rows[social_link]["submit"], "否")
+        self.assertIn("未明确", rows[unknown_link]["remarks"])
+        self.assertIn("详情页未能核对", rows[unreadable_link]["remarks"])
+        self.assertEqual(rows[conflict_link]["submit"], "否")
+        controller.close()
+
     def test_saved_company_filter_blocks_before_application(self):
         task = self.store.get_task("BOSS直聘")
         self.store.add_apply_record({

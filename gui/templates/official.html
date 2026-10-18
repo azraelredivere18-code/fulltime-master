@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>全职高手 · 企业官网投递助手</title>
+    <link rel="stylesheet" href="static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="static/css/redesign.css">
+    <link rel="stylesheet" href="static/css/official.css">
+</head>
+<body class="official-window">
+<main class="official-shell">
+    <header class="official-header">
+        <p class="official-kicker">FULLTIME MASTER / DIRECT APPLICATION</p>
+        <h1>企业官网投递助手</h1>
+        <p>打开目标岗位或招聘官网，保存常用资料，识别当前表单后快速填写。</p>
+    </header>
+
+    <section class="official-panel">
+        <h2>01 · 打开招聘页面</h2>
+        <label for="official-url">目标网址（HTTPS）</label>
+        <div class="official-row">
+            <input id="official-url" type="url" placeholder="https://企业招聘官网/岗位详情" autocomplete="url">
+            <button id="open-site" type="button">用内置浏览器打开</button>
+        </div>
+        <p id="page-status" class="official-status">尚未打开网页</p>
+        <button id="trust-current" class="official-secondary" type="button">核对并确认浏览器当前域名</button>
+        <p class="official-help">登录、验证码和表单提交需要你本人完成。若网站跳转到第三方招聘系统，请先核对网址，再确认当前域名。</p>
+    </section>
+
+    <section class="official-panel">
+        <div class="official-heading"><h2>02 · 常用个人资料</h2><span>保存在本机当前 Windows 账户</span></div>
+        <p class="official-help">按需填写。身份证号默认不会快速填入网页；启用下方选项后才会填写。</p>
+        <form id="profile-form" autocomplete="off"><div id="profile-fields" class="official-grid"></div></form>
+        <div class="official-buttons">
+            <button id="save-profile" type="button">加密保存资料</button>
+            <button id="clear-profile" class="official-secondary" type="button">清空本机资料</button>
+        </div>
+        <p id="save-status" class="official-status" role="status"></p>
+    </section>
+
+    <section class="official-panel">
+        <h2>03 · 识别与填写当前表单</h2>
+        <label class="official-toggle"><input id="include-id" type="checkbox"> 本次允许填写身份证号</label>
+        <div class="official-buttons">
+            <button id="inspect-form" class="official-secondary" type="button">先识别可填写字段</button>
+            <button id="fill-form" type="button">填写空白字段</button>
+        </div>
+        <p class="official-help">只处理当前页面中标签明确、唯一且空白的字段；跳过密码、验证码、文件、隐藏字段和网页内嵌表单。填写后请在网页逐项检查，并自行提交。</p>
+        <div id="fill-result" class="official-result" role="status">等待识别表单</div>
+    </section>
+    <section class="official-panel">
+        <h2>04 · 记录手动投递</h2>
+        <p class="official-help">在官网看到成功提示后，再手动确认并记录。此记录标明由你确认，不代表程序核验了网站回执。</p>
+        <div class="official-grid">
+            <div><label for="record-company">公司名称</label><input id="record-company" type="text"></div>
+            <div><label for="record-title">岗位名称</label><input id="record-title" type="text"></div>
+            <div><label for="record-area">工作地区（选填）</label><input id="record-area" type="text"></div>
+        </div>
+        <button id="record-application" type="button">我已在官网投递，保存记录</button>
+        <p id="record-status" class="official-status" role="status"></p>
+    </section>
+</main>
+<script src="static/js/official.js"></script>
+</body>
+</html>

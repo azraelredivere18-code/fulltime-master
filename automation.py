@@ -15,6 +15,7 @@ from backend import china_day
 from application_filters import applied_company_reason, off_site_reason
 from sales_roles import classify_sales_role
 from employment_type import employment_type_reason, job_type
+from recruitment_track import recruitment_track, recruitment_track_reason
 from salary_codec import readable_salary
 
 
@@ -502,13 +503,16 @@ class AutomationController:
             if not item:
                 continue
             item["employment_type"] = str(item.get("employment_type") or card.get("employment_type") or "") if isinstance(card, dict) else str(item.get("employment_type") or "")
+            if isinstance(card, dict):
+                item["recruitment_track"] = str(card.get("recruitment_track") or "")
             self._seen_links_plan.add(item["link"])
             existing = known.get(item["link"])
             detail = None
             metadata: dict[str, str] = {}
             missing = [field for field in ("company", "area", "salary", "experience", "education")
                        if not item[field] and not (existing and existing.get(field))]
-            needs_type_evidence = job_type(item) == "unknown"
+            targeted_track = (task.get("recruitment_track") or "all") != "all"
+            needs_type_evidence = job_type(item) == "unknown" or targeted_track
             if (missing or needs_type_evidence) and (task_id, item["link"]) not in self._metadata_attempted:
                 self._metadata_attempted.add((task_id, item["link"]))
                 detail, metadata = self._read_job_detail_data(item["link"])
@@ -517,6 +521,8 @@ class AutomationController:
                     item[field] = _job_tag(value, field) if field in {"experience", "education"} else value
                 if metadata.get("employment_type"):
                     item["employment_type"] = str(metadata["employment_type"])
+                if metadata.get("recruitment_track"):
+                    item["recruitment_track"] = str(metadata["recruitment_track"])
                 if detail:
                     item["description"] = detail
             if existing:
@@ -566,6 +572,10 @@ class AutomationController:
                                         strict_unknown=self.platform_name != "BOSS直聘"):
                 remarks = employment_type_reason(str(task.get("employment_type") or "full_time"), item,
                                                  strict_unknown=self.platform_name != "BOSS直聘")
+            elif targeted_track and detail is None:
+                remarks = "仅投指定招聘渠道：详情页未能核对，暂不投递"
+            elif recruitment_track_reason(str(task.get("recruitment_track") or "all"), item):
+                remarks = recruitment_track_reason(str(task.get("recruitment_track") or "all"), item)
             elif prior_company_reason:
                 remarks = prior_company_reason
             elif region_reason:
@@ -682,6 +692,7 @@ class AutomationController:
                                   (existing.get("attempt_state", "") if existing else "")),
                 "remarks": remarks,
                 "employment_type": job_type(item),
+                "recruitment_track": recruitment_track(item),
                 "link": item["link"],
             }
             if existing:

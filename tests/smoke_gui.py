@@ -130,6 +130,7 @@ def main() -> None:
         def check() -> None:
             setting = None
             record = None
+            official_window = None
             detail = None
             try:
                 window.events.loaded.wait(15)
@@ -153,8 +154,19 @@ def main() -> None:
                 print(json.dumps({"main": main_result, "setting": setting_result}, ensure_ascii=False), flush=True)
                 if (main_result["options"] != 7 or main_result["modeOptions"] != 0
                         or not main_result["notice"] or not setting_result["noFilterMode"]
-                        or setting_result["employmentType"] != "full_time"):
+                        or setting_result["employmentType"] != "full_time"
+                        or setting.evaluate_js("document.querySelector('#recruitment-track').value") != "all"):
                     raise AssertionError("GUI failed to load expected options")
+                official_window = manager.open_window("official")
+                official_window.events.loaded.wait(15)
+                time.sleep(1)
+                official_result = official_window.evaluate_js("""({
+                    fields: document.querySelectorAll('#profile-fields [data-key]').length,
+                    bridge: typeof window.pywebview.api.save_official_profile,
+                    url: !!document.querySelector('#official-url')
+                })""")
+                if official_result != {"fields": 20, "bridge": "function", "url": True}:
+                    raise AssertionError(f"Official application window failed: {official_result}")
                 mode_ui = window.evaluate_js("document.querySelector('#start-apply').innerText")
                 if not mode_ui.startswith("开始自动投递"):
                     raise AssertionError(f"Auto mode control did not update: {mode_ui}")
@@ -313,6 +325,8 @@ def main() -> None:
                     setting.destroy()
                 if record is not None:
                     record.destroy()
+                if official_window is not None:
+                    official_window.destroy()
                 window.destroy()
 
         webview.start(check, gui="edgechromium", private_mode=False,

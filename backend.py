@@ -24,12 +24,12 @@ from salary_codec import readable_salary
 
 TASK_FIELDS = (
     "keyword", "city", "search_prompt", "job_prompt", "search_re",
-    "job_re", "resume", "match_degree", "platform", "employment_type",
+    "job_re", "resume", "match_degree", "platform", "employment_type", "recruitment_track",
 )
 APPLY_FIELDS = (
     "create_time", "source", "task_id", "match_degree", "submit", "title", "company",
     "area", "salary", "experience", "education", "submit_time", "remarks", "link",
-    "search_city", "application_day", "attempt_state", "employment_type",
+    "search_city", "application_day", "attempt_state", "employment_type", "recruitment_track",
 )
 CHINA_TIME = timezone(timedelta(hours=8))
 
@@ -271,6 +271,9 @@ class LocalStore:
         result["employment_type"] = str(result["employment_type"] or "full_time")
         if result["employment_type"] not in {"full_time", "internship"}:
             raise ValueError("employment_type must be full_time or internship")
+        result["recruitment_track"] = str(result["recruitment_track"] or "all")
+        if result["recruitment_track"] not in {"all", "campus", "social"}:
+            raise ValueError("recruitment_track must be all, campus or social")
         return result
 
     @synchronized
