@@ -1,0 +1,20 @@
+/* App-owned text glyphs avoid missing icon-font boxes in WebView2. */
+[class^="icon-"], [class*=" icon-"] { display:inline-block; min-width:1.2em; text-align:center;
+  font-family:"Segoe UI Symbol","Microsoft YaHei UI",sans-serif; font-style:normal; }
+.icon-tasks::before { content:"▤"; }
+.icon-apply::before { content:"↗"; }
+.icon-setting::before { content:"⚙"; }
+.icon-blocklist::before { content:"⊘"; }
+.icon-close::before { content:"×"; }
+.icon-tip::before { content:"ⓘ"; }
+.icon-up::before { content:"↑"; }
+.icon-down::before { content:"↓"; }
+.icon-delete::before { content:"×"; }
+.icon-logo-boss::before { content:"B"; }
+.icon-logo-zhilian::before { content:"智"; }
+.icon-logo-qiancheng::before { content:"前"; }
+.icon-logo-liepin::before { content:"猎"; }
+.icon-logo-lagou::before { content:"拉"; }
+.icon-logo-niuke::before { content:"牛"; }
+.icon-logo-guopin::before { content:"国"; }
+.icon-logo-gdzhzp::before { content:"粤"; }

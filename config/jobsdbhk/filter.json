@@ -1,0 +1,330 @@
+{
+  "類型": {
+    "name": "類型",
+    "selectionMode": "multiple",
+    "options": [
+      {
+        "name": "不限",
+        "code": "不限"
+      },
+      {
+        "name": "Full time",
+        "code": "Full time"
+      },
+      {
+        "name": "Part time",
+        "code": "Part time"
+      },
+      {
+        "name": "Contract/Temp",
+        "code": "Contract/Temp"
+      },
+      {
+        "name": "Casual/Vacation",
+        "code": "Casual/Vacation"
+      }
+    ]
+  },
+  "遠距": {
+    "name": "遠距",
+    "selectionMode": "multiple",
+    "options": [
+      {
+        "name": "不限",
+        "code": "不限"
+      },
+      {
+        "name": "辦公室工作",
+        "code": "辦公室工作"
+      },
+      {
+        "name": "混合工作",
+        "code": "混合工作"
+      },
+      {
+        "name": "遠距工作",
+        "code": "遠距工作"
+      }
+    ]
+  },
+  "工作類別": {
+    "name": "工作類別",
+    "selectionMode": "hidden",
+    "options": [
+      {
+        "name": "不限",
+        "code": "不限"
+      },
+      {
+        "name": "Accounting",
+        "code": "Accounting"
+      },
+      {
+        "name": "Administration & Office Support",
+        "code": "Administration & Office Support"
+      },
+      {
+        "name": "Advertising, Arts & Media",
+        "code": "Advertising, Arts & Media"
+      },
+      {
+        "name": "Banking & Financial Services",
+        "code": "Banking & Financial Services"
+      },
+      {
+        "name": "Call Centre & Customer Service",
+        "code": "Call Centre & Customer Service"
+      },
+      {
+        "name": "CEO & General Management",
+        "code": "CEO & General Management"
+      },
+      {
+        "name": "Community Services & Development",
+        "code": "Community Services & Development"
+      },
+      {
+        "name": "Construction",
+        "code": "Construction"
+      },
+      {
+        "name": "Consulting & Strategy",
+        "code": "Consulting & Strategy"
+      },
+      {
+        "name": "Design & Architecture",
+        "code": "Design & Architecture"
+      },
+      {
+        "name": "Education & Training",
+        "code": "Education & Training"
+      },
+      {
+        "name": "Engineering",
+        "code": "Engineering"
+      },
+      {
+        "name": "Farming, Animals & Conservation",
+        "code": "Farming, Animals & Conservation"
+      },
+      {
+        "name": "Government & Defence",
+        "code": "Government & Defence"
+      },
+      {
+        "name": "Healthcare & Medical",
+        "code": "Healthcare & Medical"
+      },
+      {
+        "name": "Hospitality & Tourism",
+        "code": "Hospitality & Tourism"
+      },
+      {
+        "name": "Human Resources & Recruitment",
+        "code": "Human Resources & Recruitment"
+      },
+      {
+        "name": "Information & Communication Technology",
+        "code": "Information & Communication Technology"
+      },
+      {
+        "name": "Insurance & Superannuation",
+        "code": "Insurance & Superannuation"
+      },
+      {
+        "name": "Legal",
+        "code": "Legal"
+      },
+      {
+        "name": "Manufacturing, Transport & Logistics",
+        "code": "Manufacturing, Transport & Logistics"
+      },
+      {
+        "name": "Marketing & Communications",
+        "code": "Marketing & Communications"
+      },
+      {
+        "name": "Mining, Resources & Energy",
+        "code": "Mining, Resources & Energy"
+      },
+      {
+        "name": "Real Estate & Property",
+        "code": "Real Estate & Property"
+      },
+      {
+        "name": "Retail & Consumer Products",
+        "code": "Retail & Consumer Products"
+      },
+      {
+        "name": "Sales",
+        "code": "Sales"
+      },
+      {
+        "name": "Science & Technology",
+        "code": "Science & Technology"
+      },
+      {
+        "name": "Self Employment",
+        "code": "Self Employment"
+      },
+      {
+        "name": "Sport & Recreation",
+        "code": "Sport & Recreation"
+      },
+      {
+        "name": "Trades & Services",
+        "code": "Trades & Services"
+      },
+      {
+        "name": "Accounting",
+        "code": "Accounting"
+      },
+      {
+        "name": "Administration & Office Support",
+        "code": "Administration & Office Support"
+      },
+      {
+        "name": "Advertising, Arts & Media",
+        "code": "Advertising, Arts & Media"
+      },
+      {
+        "name": "Banking & Financial Services",
+        "code": "Banking & Financial Services"
+      },
+      {
+        "name": "Call Centre & Customer Service",
+        "code": "Call Centre & Customer Service"
+      },
+      {
+        "name": "CEO & General Management",
+        "code": "CEO & General Management"
+      },
+      {
+        "name": "Community Services & Development",
+        "code": "Community Services & Development"
+      },
+      {
+        "name": "Construction",
+        "code": "Construction"
+      },
+      {
+        "name": "Consulting & Strategy",
+        "code": "Consulting & Strategy"
+      },
+      {
+        "name": "Design & Architecture",
+        "code": "Design & Architecture"
+      },
+      {
+        "name": "Education & Training",
+        "code": "Education & Training"
+      },
+      {
+        "name": "Engineering",
+        "code": "Engineering"
+      },
+      {
+        "name": "Farming, Animals & Conservation",
+        "code": "Farming, Animals & Conservation"
+      },
+      {
+        "name": "Government & Defence",
+        "code": "Government & Defence"
+      },
+      {
+        "name": "Healthcare & Medical",
+        "code": "Healthcare & Medical"
+      },
+      {
+        "name": "Hospitality & Tourism",
+        "code": "Hospitality & Tourism"
+      },
+      {
+        "name": "Human Resources & Recruitment",
+        "code": "Human Resources & Recruitment"
+      },
+      {
+        "name": "Information & Communication Technology",
+        "code": "Information & Communication Technology"
+      },
+      {
+        "name": "Insurance & Superannuation",
+        "code": "Insurance & Superannuation"
+      },
+      {
+        "name": "Legal",
+        "code": "Legal"
+      },
+      {
+        "name": "Manufacturing, Transport & Logistics",
+        "code": "Manufacturing, Transport & Logistics"
+      },
+      {
+        "name": "Marketing & Communications",
+        "code": "Marketing & Communications"
+      },
+      {
+        "name": "Mining, Resources & Energy",
+        "code": "Mining, Resources & Energy"
+      },
+      {
+        "name": "Real Estate & Property",
+        "code": "Real Estate & Property"
+      },
+      {
+        "name": "Retail & Consumer Products",
+        "code": "Retail & Consumer Products"
+      },
+      {
+        "name": "Sales",
+        "code": "Sales"
+      },
+      {
+        "name": "Science & Technology",
+        "code": "Science & Technology"
+      },
+      {
+        "name": "Self Employment",
+        "code": "Self Employment"
+      },
+      {
+        "name": "Sport & Recreation",
+        "code": "Sport & Recreation"
+      },
+      {
+        "name": "Trades & Services",
+        "code": "Trades & Services"
+      }
+    ]
+  },
+  "刊登時間": {
+    "name": "刊登時間",
+    "selectionMode": "single",
+    "options": [
+      {
+        "name": "不限",
+        "code": "不限"
+      },
+      {
+        "name": "今天",
+        "code": "今天"
+      },
+      {
+        "name": "過去 3 天",
+        "code": "過去 3 天"
+      },
+      {
+        "name": "過去 7 天",
+        "code": "過去 7 天"
+      },
+      {
+        "name": "過去 14 天",
+        "code": "過去 14 天"
+      },
+      {
+        "name": "過去 30 天",
+        "code": "過去 30 天"
+      }
+    ]
+  }
+}

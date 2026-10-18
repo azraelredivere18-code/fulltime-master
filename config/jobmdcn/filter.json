@@ -1,0 +1,184 @@
+{
+  "companyType": {
+    "name": "单位类型",
+    "selectionMode": "single",
+    "options": [
+      {
+        "name": "不限",
+        "code": "不限"
+      },
+      {
+        "name": "公立医院",
+        "code": "1"
+      },
+      {
+        "name": "民营医院",
+        "code": "2"
+      },
+      {
+        "name": "社区卫生服务中心",
+        "code": "12"
+      },
+      {
+        "name": "医疗诊所",
+        "code": "8"
+      },
+      {
+        "name": "政府机构",
+        "code": "13"
+      },
+      {
+        "name": "国企",
+        "code": "10"
+      },
+      {
+        "name": "央企",
+        "code": "11"
+      },
+      {
+        "name": "股份制医院",
+        "code": "9"
+      },
+      {
+        "name": "科研院校",
+        "code": "5"
+      },
+      {
+        "name": "健康管理",
+        "code": "14"
+      },
+      {
+        "name": "医药/生物企业",
+        "code": "15"
+      },
+      {
+        "name": "其他",
+        "code": "7"
+      }
+    ]
+  },
+  "salary": {
+    "name": "薪资福利",
+    "selectionMode": "single",
+    "options": [
+      {
+        "name": "不限",
+        "code": "不限"
+      },
+      {
+        "name": "面议",
+        "code": "1"
+      },
+      {
+        "name": "2 千以下",
+        "code": "2"
+      },
+      {
+        "name": "2-5 千",
+        "code": "3"
+      },
+      {
+        "name": "5千-1 万",
+        "code": "4"
+      },
+      {
+        "name": "1-1.5 万",
+        "code": "5"
+      },
+      {
+        "name": "1.5-2 万",
+        "code": "6"
+      },
+      {
+        "name": "2 万以上",
+        "code": "7"
+      }
+    ]
+  },
+  "jobYear": {
+    "name": "工作经验",
+    "selectionMode": "single",
+    "options": [
+      {
+        "name": "不限",
+        "code": "不限"
+      },
+      {
+        "name": "经验不限",
+        "code": "101"
+      },
+      {
+        "name": "在读学生",
+        "code": "102"
+      },
+      {
+        "name": "应届生",
+        "code": "103"
+      },
+      {
+        "name": "1-3年",
+        "code": "104"
+      },
+      {
+        "name": "3-5年",
+        "code": "105"
+      },
+      {
+        "name": "5-10年",
+        "code": "106"
+      },
+      {
+        "name": "10年以上",
+        "code": "107"
+      }
+    ]
+  },
+  "grade": {
+    "name": "学历要求",
+    "selectionMode": "single",
+    "options": [
+      {
+        "name": "不限",
+        "code": "不限"
+      },
+      {
+        "name": "大专",
+        "code": "1"
+      },
+      {
+        "name": "本科",
+        "code": "2"
+      },
+      {
+        "name": "硕士",
+        "code": "3"
+      },
+      {
+        "name": "博士",
+        "code": "4"
+      }
+    ]
+  },
+  "jobType": {
+    "name": "职位类别",
+    "selectionMode": "single",
+    "options": [
+      {
+        "name": "不限",
+        "code": "不限"
+      },
+      {
+        "name": "全职",
+        "code": "1"
+      },
+      {
+        "name": "兼职",
+        "code": "2"
+      },
+      {
+        "name": "实习",
+        "code": "3"
+      }
+    ]
+  }
+}

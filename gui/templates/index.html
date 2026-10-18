@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-cn" class="h-100">
+<head>
+    <meta charset="UTF-8">
+    <title>全职高手 · 自动投递指挥台</title>
+    <link rel="stylesheet" href="static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="static/css/bootstrap-select.min.css">
+    <link rel="stylesheet" href="static/css/app-icons.css">
+    <link rel="stylesheet" href="static/css/style.css">
+    <link rel="stylesheet" href="static/css/redesign.css">
+</head>
+<body class="main-window">
+
+<main class="app-shell">
+    <header class="app-hero">
+        <div class="app-mark" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><path d="M17 18h31v18L32 51H17V18Z" stroke="currentColor" stroke-width="4"/><path d="M24 28h16M24 36h10M36 43l13 9" stroke="currentColor" stroke-width="4" stroke-linecap="square"/></svg></div>
+        <div class="hero-copy"><p class="eyebrow">CAREER OPERATIONS / 0.10</p><h1>全职高手</h1>
+        <p>连接平台，锁定机会，自动投递。</p></div>
+        <span class="hero-version">DESKTOP<br>EDITION</span>
+    </header>
+    <section class="app-panel connection-panel">
+        <div class="section-heading"><h2><span class="section-index">01</span> 连接平台</h2><span class="panel-kicker">PLATFORM LINK</span></div>
+        <label class="field-label" for="selected-platform">本次投递平台</label>
+        <div class="platform-row">
+            <select class="selected-platform form-control" id="selected-platform">
+                <option value="BOSS直聘" selected>BOSS直聘</option>
+                <option value="智联招聘">智联招聘</option>
+                <optgroup label="51Job 账号">
+                    <option value="前程无忧">前程无忧</option>
+                    <option value="应届生">应届生</option>
+                </optgroup>
+                <optgroup label="新增适配 · 需登录后校准">
+                    <option value="猎聘">猎聘</option>
+                    <option value="拉勾">拉勾</option>
+                    <option value="牛客网">牛客网</option>
+                </optgroup>
+            </select>
+            <button type="button" class="btn btn-outline-primary" id="open-browser">连接浏览器 ↗</button>
+        </div>
+        <p class="status-line"><span class="status-led" aria-hidden="true"></span><span id="login-status">登录状态：尚未检查</span></p>
+        <p class="connection-note">登录和安全验证由你在内置浏览器完成。每次运行先选择一个平台。</p>
+    </section>
+    <section class="app-panel mission-panel">
+        <div class="section-heading"><h2><span class="section-index">02</span> 自动投递</h2><span class="panel-kicker">MISSION CONTROL</span></div>
+        <div class="mission-copy"><span class="mission-icon" aria-hidden="true">↗</span><div><strong>准备执行投递任务</strong><small>按任务搜索职位并核对岗位。仅在网页确认成功后计入已投递。</small></div></div>
+        <p class="mode-hint" id="mode-hint">请先手动登录网站并准备网站简历；BOSS 直聘执行发起沟通。</p>
+        <button type="button" class="btn btn-primary w-100 main-action" id="start-apply">开始自动投递 <span aria-hidden="true">→</span></button>
+    </section>
+    <section class="app-panel run-panel">
+        <div class="section-heading"><h2><span class="section-index">03</span> 行动实况</h2><span class="panel-kicker">LIVE FEED</span></div>
+        <p class="task-show d-none">当前目标 / <b class="task-keyword">？</b> · <b class="task-city">？</b></p>
+        <p class="status-show"><span class="task-msg">尚未开始</span></p>
+    </section>
+    <nav class="app-actions" aria-label="工作台操作">
+        <button type="button" class="btn btn-outline-primary" onclick="window.pywebview.api.open_record_window()">查看记录</button>
+        <button type="button" class="btn btn-outline-primary" onclick="window.pywebview.api.open_setting_window()">任务与设置</button>
+        <button type="button" class="btn btn-link" id="export-page-diagnostics">页面诊断</button>
+    </nav>
+</main>
+<div class="modal fade" id="tip-modal" tabindex="-1" aria-labelledby="tip-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="tip-title"></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body py-0"></div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-primary btn-sm" data-dismiss="modal">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="static/js/jquery.slim.min.js"></script>
+<script src="static/js/popper.min.js"></script>
+<script src="static/js/bootstrap.min.js"></script>
+<script src="static/js/bootstrap-select.min.js"></script>
+<script src="static/js/common.js"></script>
+<script src="static/js/index.js"></script>
+</body>
+</html>

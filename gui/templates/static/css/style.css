@@ -1,0 +1,404 @@
+* {
+    font-size: 15px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+p {
+    margin-bottom: 0;
+}
+
+.pagination .page-link,
+.btn-secondary:not(:disabled):not(.disabled).active:focus, .btn-secondary:not(:disabled):not(.disabled):active:focus, .show > .btn-secondary.dropdown-toggle:focus,
+.bootstrap-select .dropdown-toggle,
+.form-control:focus,
+.custom-select:focus,
+.custom-control-input:focus,
+.btn.focus, .btn:focus,
+.btn-outline-primary.focus, .btn-outline-primary:focus {
+    box-shadow: none !important;
+}
+button.close span{
+        font-size: 22px;
+}
+.link{
+    color: #2168f8;
+    cursor: pointer;
+}
+
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+    background-color: #2168f8;
+}
+
+.rounded-lg {
+    border-radius: .6rem !important;
+}
+
+.btn-primary {
+    background-color: #2168f8;
+    border-color: #2168f8;
+}
+
+.btn-primary:hover {
+    background-color: #7aa4fb;
+    border-color: #7aa4fb;
+}
+
+.btn-link {
+    text-decoration: none !important;
+}
+
+.btn-outline-primary {
+    color: #2168f8;
+    border-color: #2168f8;
+}
+
+.btn-outline-primary:hover {
+    color: #2168f8;
+    background-color: #e6efff;
+}
+
+.btn-xs {
+    padding: .15rem .25rem;
+    font-size: .875rem;
+    line-height: 1.5;
+    border-radius: .2rem;
+}
+
+.bootstrap-table .btn {
+    padding: .15rem .25rem;
+    font-size: .875rem;
+    line-height: 1.5;
+    border-radius: .2rem;
+    background: #2168f8;
+    border-color: #2168f8;
+}
+
+.bootstrap-table .form-control {
+    height: calc(1.5em + .5rem);
+    padding: .1rem .25rem;
+    font-size: .875rem;
+    line-height: 1.5;
+    border-radius: .2rem;
+}
+
+.bootstrap-table .pagination .page-item.active .page-link {
+    background: #2168f8 !important;
+    color: #fff;
+}
+
+.bootstrap-table .pagination .page-link {
+    padding: .25rem .5rem;
+    font-size: .875rem;
+    line-height: 1.5;
+    color: #1b1e21;
+}
+
+.bootstrap-select {
+    padding: 0;
+}
+
+.bootstrap-select .filter-option-inner-inner {
+    font-size: 13px;
+}
+
+.custom-select.bootstrap-select {
+    background: none !important;
+}
+
+.btn-secondary.focus, .btn-secondary:focus,
+.bootstrap-select .dropdown-toggle,
+.bootstrap-select .dropdown-toggle:focus,
+.bootstrap-select > select.mobile-device:focus + .dropdown-toggle {
+    outline-offset: 0 !important;
+    outline: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+span[class^=icon] {
+    cursor: pointer;
+}
+
+.hide-text {
+    max-width: 200px;
+    overflow: hidden;
+    white-space: nowrap;
+    direction: rtl;
+    text-align: left;
+}
+
+.col-form-label {
+    padding-right: 0;
+}
+
+.table-wapper {
+    overflow-y: auto;
+    position: relative;
+}
+
+.table-style thead {
+    font-size: 13px !important;
+    border-top-left-radius: .2rem;
+    border-top-right-radius: .2rem;
+    background-color: #e8edff;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#tip-modal {
+    z-index: 9999 !important;
+}
+
+#tip-modal .btn-primary {
+    min-width: 100px;
+}
+
+#tip-modal img {
+    width: 54px;
+}
+
+#resume-modal .modal-body {
+    padding: 5px;
+}
+
+#resume-modal .modal-body textarea {
+    line-height: 16px;
+}
+
+#resume-modal .modal-body .form-group {
+    margin: 0 !important;
+}
+
+.form-group .icon-tip {
+    margin-right: 2px;
+    vertical-align: text-bottom;
+}
+
+.icon-close {
+    font-size: 13px;
+    margin-left: 20px;
+    cursor: pointer;
+}
+
+.topbar {
+    padding: 5px 20px;
+}
+
+.topbar .icon-close:before {
+    vertical-align: sub;
+    vertical-align: -webkit-baseline-middle;
+}
+
+.table-style th {
+    border-top: none;
+}
+
+.table-style td {
+    max-width: 90px;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.table-style th:first-child {
+    border-top-left-radius: .6rem;
+}
+
+.table-style th:last-child {
+    border-top-right-radius: .6rem;
+}
+
+.main-window {
+    background-image: url("../images/index-bg.png");
+    background-color: #f0f0f0; /* 备用颜色 */
+    background-size: cover; /* 全覆盖模式 */
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.main-window .logo p {
+    width: 300px;
+    position: absolute;
+    top: -34px;
+    left: 50%;
+    transform: translate(-50%, 0);
+    line-height: 16px;
+    color: #004085;
+}
+
+.main-window .logo img {
+    max-width: 300px;
+    max-height: 40px;
+}
+
+.main-window .footer p {
+    color: #083475;
+    font-size: 13px;
+}
+
+.setting-window {
+    height: 100vh;
+    margin: 0;
+    min-height: 100vh;
+    background: linear-gradient(to top, #baceff, #e8edff),
+    #e8edff;
+    background-size: 100% 25%;
+    background-repeat: no-repeat;
+    background-position: bottom;
+}
+
+.setting-window .form-group {
+    margin-bottom: .6rem !important;
+}
+
+.setting-window .tab-content {
+    flex: 1;
+    min-width: 0;
+    height: 93vh !important;
+    background: #ffffff;
+}
+
+.setting-window .custom-tabs{
+    overflow: auto;
+    width: 150px;
+}
+.setting-window .custom-tabs::-webkit-scrollbar{
+    display: none;
+}
+.setting-window .custom-tabs .nav-link {
+    color: #888a9f;
+    font-size: 15px;
+    padding-top: 1.5px;
+    padding-bottom: 1.5px;
+    margin-bottom: 3px;
+}
+
+.setting-window .custom-tabs .nav-link img {
+    width: 14px;
+    display: inline-block;
+    margin-left: 5px;
+    vertical-align: middle;
+}
+
+.setting-window .custom-tabs .nav-link span {
+    margin-left: 5px;
+    vertical-align: middle;
+}
+
+.setting-window .custom-tabs .nav-link span:first-child {
+    width: 14px;
+    display: inline-block;
+}
+
+.setting-window .custom-tabs .nav-link span.icon-logo-yinjiesheng {
+    color: #ffd74d;
+}
+
+.setting-window .custom-tabs .nav-link.active {
+    color: #ffffff;
+}
+
+.setting-window .custom-tabs .nav-link.active[href$=setting] span:before {
+    color: #ffffff !important;
+}
+
+.setting-window #apply-record .table-responsive {
+    max-width: 713px;
+}
+
+.setting-window #tasks-setting #platform + button + .dropdown-menu{
+    max-height: 387.047px !important;
+    right: 0px !important;
+    left: auto !important;
+    transform: translate3d(0px, -389px, 0px) !important;
+}
+
+.setting-window #tasks-setting #platform + button + .dropdown-menu > .inner{
+    max-height: 387.047px !important;
+}
+
+.setting-window #blocklist-setting .blocklist-item {
+    background-color: #e7ebf7;
+}
+
+.setting-window #blocklist-setting .blocklist-item .icon-delete:before {
+    vertical-align: middle;
+}
+
+.setting-window #blocklist-setting .blocklist-container {
+    background-color: #f2f2fe;
+}
+
+.setting-window #blocklist-setting .save-blocklist {
+    min-width: 120px
+}
+
+.setting-window .platform-setting .badge {
+    float: left;
+    position: relative;
+    top: 1px;
+    font-size: 12px;
+}
+
+.setting-window .platform-setting form {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: clip;
+}
+
+#chromium-path-text,
+#driver-path-text {
+    display: inline-block;
+    max-width: 358px;
+    vertical-align: middle;
+}
+
+.record-window,
+.activation-window {
+    height: 100vh;
+    background: linear-gradient(to top, #baceff, #e8edff),
+    #e8edff;
+    background-size: 100% 25%;
+    background-repeat: no-repeat;
+    background-position: bottom;
+}
+
+.record-window .body,
+.activation-window .body {
+    margin: 20px 20px 20px;
+    padding: 10px;
+    max-height: 100vh;
+    overflow: auto;
+}
+
+.activation-window .body img {
+    height: 20px;
+}
+
+.record-window form {
+    position: relative;
+    top: 7px;
+    float: left;
+}
+
+.activation-window textarea {
+    font-size: 13px;
+    line-height: 15px;
+}
+
+.activation-window textarea#redeem-code {
+    height: 100px;
+    line-height: 96px;
+    font-weight: bold;
+    padding: 0 10px;
+    text-align: center;
+    font-size: 30px;
+    letter-spacing: 6px;
+}
+
+.record-window table {
+    font-size: 13px;
+}

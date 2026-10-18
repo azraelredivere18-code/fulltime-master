@@ -1,0 +1,312 @@
+{
+  "target": {
+    "name": "限制投递对象",
+    "selectionMode": "single",
+    "options": [
+      {
+        "name": "不限",
+        "code": "不限"
+      },
+      {
+        "name": "只投人力",
+        "code": "只投HR"
+      },
+      {
+        "name": "不投人力",
+        "code": "不投HR"
+      },
+      {
+        "name": "不投猎头",
+        "code": "不投猎头"
+      }
+    ]
+  },
+  "liveness": {
+    "name": "只投活跃HR",
+    "selectionMode": "single",
+    "options": [
+      {
+        "name": "否",
+        "code": "否"
+      },
+      {
+        "name": "是",
+        "code": "是"
+      }
+    ]
+  },
+  "求职类型": {
+    "name": "求职类型",
+    "selectionMode": "single",
+    "options": [
+      {
+        "name": "不限",
+        "code": "不限"
+      },
+      {
+        "name": "全职",
+        "code": "全职"
+      },
+      {
+        "name": "兼职",
+        "code": "兼职"
+      }
+    ]
+  },
+  "工作经验": {
+    "name": "工作经验",
+    "selectionMode": "multiple",
+    "separator": ",",
+    "options": [
+      {
+        "name": "不限",
+        "code": "不限"
+      },
+      {
+        "name": "在校生",
+        "code": "在校生"
+      },
+      {
+        "name": "应届生",
+        "code": "应届生"
+      },
+      {
+        "name": "经验不限",
+        "code": "经验不限"
+      },
+      {
+        "name": "1年以内",
+        "code": "1年以内"
+      },
+      {
+        "name": "1-3年",
+        "code": "1-3年"
+      },
+      {
+        "name": "3-5年",
+        "code": "3-5年"
+      },
+      {
+        "name": "5-10年",
+        "code": "5-10年"
+      },
+      {
+        "name": "10年以上",
+        "code": "10年以上"
+      }
+    ]
+  },
+  "薪资待遇": {
+    "name": "薪资待遇",
+    "selectionMode": "single",
+    "options": [
+      {
+        "name": "不限",
+        "code": "不限"
+      },
+      {
+        "name": "3K以下",
+        "code": "3K以下"
+      },
+      {
+        "name": "3-5K",
+        "code": "3-5K"
+      },
+      {
+        "name": "5-10K",
+        "code": "5-10K"
+      },
+      {
+        "name": "10-20K",
+        "code": "10-20K"
+      },
+      {
+        "name": "20-50K",
+        "code": "20-50K"
+      },
+      {
+        "name": "50K以上",
+        "code": "50K以上"
+      }
+    ]
+  },
+  "学历要求": {
+    "name": "学历要求",
+    "selectionMode": "multiple",
+    "separator": ",",
+    "options": [
+      {
+        "name": "不限",
+        "code": "不限"
+      },
+      {
+        "name": "初中及以下",
+        "code": "初中及以下"
+      },
+      {
+        "name": "中专/中技",
+        "code": "中专/中技"
+      },
+      {
+        "name": "高中",
+        "code": "高中"
+      },
+      {
+        "name": "大专",
+        "code": "大专"
+      },
+      {
+        "name": "本科",
+        "code": "本科"
+      },
+      {
+        "name": "硕士",
+        "code": "硕士"
+      },
+      {
+        "name": "博士",
+        "code": "博士"
+      }
+    ]
+  },
+  "公司规模": {
+    "name": "公司规模",
+    "selectionMode": "multiple",
+    "separator": ",",
+    "options": [
+      {
+        "name": "不限",
+        "code": "不限"
+      },
+      {
+        "name": "0-20人",
+        "code": "0-20人"
+      },
+      {
+        "name": "20-99人",
+        "code": "20-99人"
+      },
+      {
+        "name": "100-499人",
+        "code": "100-499人"
+      },
+      {
+        "name": "500-999人",
+        "code": "500-999人"
+      },
+      {
+        "name": "1000-9999人",
+        "code": "1000-9999人"
+      },
+      {
+        "name": "10000人以上",
+        "code": "10000人以上"
+      }
+    ]
+  },
+  "融资阶段": {
+    "name": "融资阶段",
+    "selectionMode": "multiple",
+    "separator": ",",
+    "options": [
+      {
+        "name": "不限",
+        "code": "不限"
+      },
+      {
+        "name": "未融资",
+        "code": "未融资"
+      },
+      {
+        "name": "天使轮",
+        "code": "天使轮"
+      },
+      {
+        "name": "A轮",
+        "code": "A轮"
+      },
+      {
+        "name": "B轮",
+        "code": "B轮"
+      },
+      {
+        "name": "C轮",
+        "code": "C轮"
+      },
+      {
+        "name": "D轮及以上",
+        "code": "D轮及以上"
+      },
+      {
+        "name": "已上市",
+        "code": "已上市"
+      },
+      {
+        "name": "不需要融资",
+        "code": "不需要融资"
+      }
+    ]
+  },
+  "结算方式": {
+    "name": "兼职结算方式",
+    "selectionMode": "multiple",
+    "separator": ",",
+    "options": [
+      {
+        "name": "不限",
+        "code": "不限"
+      },
+      {
+        "name": "日结",
+        "code": "日结"
+      },
+      {
+        "name": "周结",
+        "code": "周结"
+      },
+      {
+        "name": "月结",
+        "code": "月结"
+      },
+      {
+        "name": "完工结",
+        "code": "完工结"
+      }
+    ]
+  },
+  "兼职时间": {
+    "name": "兼职时间",
+    "selectionMode": "multiple",
+    "separator": ",",
+    "options": [
+      {
+        "name": "不限",
+        "code": "不限"
+      },
+      {
+        "name": "周末/节假日",
+        "code": "周末/节假日"
+      },
+      {
+        "name": "寒暑假",
+        "code": "寒暑假"
+      },
+      {
+        "name": "短期兼职",
+        "code": "短期兼职"
+      },
+      {
+        "name": "长期兼职",
+        "code": "长期兼职"
+      },
+      {
+        "name": "工作日",
+        "code": "工作日"
+      },
+      {
+        "name": "夜班",
+        "code": "夜班"
+      }
+    ]
+  }
+}

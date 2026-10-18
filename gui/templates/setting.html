@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>设置</title>
+    <link rel="stylesheet" href="static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="static/css/bootstrap-datepicker3.min.css">
+    <link rel="stylesheet" href="static/css/bootstrap-select.min.css">
+    <link rel="stylesheet" href="static/css/bootstrap-table.min.css">
+    <link rel="stylesheet" href="static/css/style.css">
+    <link rel="stylesheet" href="static/css/app-icons.css">
+    <link rel="stylesheet" href="static/css/redesign.css">
+</head>
+<body class="setting-window">
+<div class="d-flex flex-column h-100">
+    <div class="header pywebview-drag-region">
+        <div class="topbar col-12 py-3 d-none justify-content-between">
+            <strong class="settings-brand">全职高手 <small>// CONTROL ROOM</small></strong>
+            <div class="d-none">
+                <span class="icon-close" onclick="pywebview.api.close_current_window()"></span>
+            </div>
+        </div>
+    </div>
+    <div class="alert alert-info py-1 px-3 m-2 small" role="status">
+        BOSS直聘已由用户验证自动投递；智联招聘、前程无忧、应届生、猎聘、拉勾、牛客网待登录后逐站校准。登录和安全验证需手动完成；AI 匹配尚未接入，提示词请留空、匹配度设为 0。
+    </div>
+    <div class="body flex-grow-1 p-3 d-flex h-100">
+        <div class="custom-tabs">
+            <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist">
+                <a class="nav-link fade show active" data-toggle="pill" href="#tasks-setting" role="tab">
+                    <span class="icon-tasks"></span>
+                    <span>投递任务</span>
+                </a>
+                <a class="nav-link fade show" data-toggle="pill" href="#apply-setting" role="tab">
+                    <span class="icon-apply"></span>
+                    <span>投递设置</span>
+                </a>
+                <a class="nav-link fade show" data-toggle="pill" href="#software-setting" role="tab">
+                    <span class="icon-setting"></span>
+                    <span>软件设置</span>
+                </a>
+                <a class="nav-link fade show" data-toggle="pill" href="#blocklist-setting" role="tab">
+                    <span class="icon-blocklist"></span>
+                    <span>黑名单</span>
+                </a>
+                <a class="nav-link fade show" data-toggle="pill" href="#boss-setting" role="tab">
+                    <span class="icon-logo-boss"></span>
+                    <span>BOSS直聘</span>
+                </a>
+                <a class="nav-link fade show" data-toggle="pill" href="#zhilian-setting" role="tab">
+                    <span class="icon-logo-zhilian"></span>
+                    <span>智联招聘</span>
+                </a>
+                <a class="nav-link fade show" data-toggle="pill" href="#qiancheng-setting" role="tab">
+                    <span class="icon-logo-qiancheng"></span>
+                    <span>前程无忧</span>
+                </a>
+                <a class="nav-link fade show" data-toggle="pill" href="#liepin-setting" role="tab">
+                    <span class="icon-logo-liepin"></span>
+                    <span>猎聘</span>
+                </a>
+                <a class="nav-link fade show" data-toggle="pill" href="#lagou-setting" role="tab">
+                    <span class="icon-logo-lagou"></span>
+                    <span>拉勾</span>
+                </a>
+                <a class="nav-link fade show" data-toggle="pill" href="#niuke-setting" role="tab">
+                    <span class="icon-logo-niuke"></span>
+                    <span>牛客网</span>
+                </a>
+                <a class="nav-link fade show" data-toggle="pill" href="#yjs-setting" role="tab">
+                    <span class="platform-mark">应</span>
+                    <span>应届生</span>
+                </a>
+                <a class="nav-link fade show" data-toggle="pill" href="#guopin-setting" role="tab">
+                    <span class="icon-logo-guopin"></span>
+                    <span>国聘网</span>
+                </a>
+                <a class="nav-link fade show" data-toggle="pill" href="#jobmdcn-setting" role="tab">
+                    <span class="platform-mark">丁</span>
+                    <span>丁香人才网</span>
+                </a>
+                <a class="nav-link fade show" data-toggle="pill" href="#jobonline-setting" role="tab">
+                    <span class="platform-mark">就</span>
+                    <span>就业在线</span>
+                </a>
+                <a class="nav-link fade show" data-toggle="pill" href="#gdzhzp-setting" role="tab">
+                    <span class="icon-logo-gdzhzp"></span>
+                    <span>广东智慧招聘</span>
+                </a>
+                <a class="nav-link fade show" data-toggle="pill" href="#offertoday-setting" role="tab">
+                    <span class="platform-mark">OT</span>
+                    <span>OfferToday</span>
+                </a>
+                <a class="nav-link fade show" data-toggle="pill" href="#jobsdbhk-setting" role="tab">
+                    <span class="platform-mark">HK</span>
+                    <span>Jobsdb HK</span>
+                </a>
+            </div>
+        </div>
+        <div class="tab-content flex-grow-1 ml-3 p-2 rounded-lg h-100" id="v-pills-tabContent">
+            <div class="tab-pane fade show active h-100" id="tasks-setting" role="tabpanel">
+                <div class="d-flex flex-column h-100">
+                    <div class="flex-grow-1 table-wapper">
+                        <table class="table-tasks table table-sm table-hover table-style text-center">
+                            <thead>
+                            <tr>
+                                <th scope="col">搜索职位</th>
+                                <th scope="col">城市</th>
+                                <th scope="col">AI筛选<br>职位</th>
+                                <th scope="col">AI匹配<br>职位</th>
+                                <th scope="col">正则筛选<br>职位</th>
+                                <th scope="col">正则匹配<br>职位</th>
+                                <th scope="col">AI匹配<br>简历</th>
+                                <th scope="col">匹配度</th>
+                                <th scope="col">岗位类型</th>
+                                <th scope="col">操作</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <form class="pt-2">
+                            <input type="hidden" id="task-id">
+                            <div class="form-group row">
+                                <label for="keyword"
+                                       class="col-sm-2 col-form-label col-form-label-sm text-right">
+                                    <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="在平台搜索的职位名称，填写多个职位将依次搜索（如需<span class='text-warning'>在搜索词中使用空格</span>将空格替换为下划线“_”）"></span>
+                                    搜索职位
+                                </label>
+                                <div class="col-sm-10">
+                                    <input type="text" class="form-control form-control-sm" id="keyword"
+                                           placeholder="（必填）填写搜索职位，多个职位用空格分开">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="city"
+                                       class="col-sm-2 col-form-label col-form-label-sm text-right">
+                                    <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="请输入目标城市。各平台的城市范围以登录后的搜索页面为准。"></span>
+                                    城市
+                                </label>
+                                <div class="col-sm-10">
+                                    <input type="text" class="form-control form-control-sm" id="city"
+                                           placeholder="（必填）填写城市名，多个城市用空格分开">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="employment-type" class="col-sm-2 col-form-label col-form-label-sm text-right">岗位类型</label>
+                                <div class="col-sm-5">
+                                    <select class="custom-select custom-select-sm" id="employment-type">
+                                        <option value="full_time" selected>全职岗位</option>
+                                        <option value="internship">实习岗位</option>
+                                    </select>
+                                    <small class="form-text text-muted">实习任务仅投页面明确标注实习的职位；全职任务排除实习职位。</small>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="search-prompt"
+                                       class="col-sm-2 col-form-label col-form-label-sm text-right">
+                                    <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="在<span class='text-warning'>职位列表页</span>使用提示词对<span class='text-warning'>职位信息</span>进行筛选（默认开启，如需关闭填写“关闭”）"></span>
+                                    AI筛选（未接入）</label>
+                                <div class="col-sm-10">
+                                    <input type="text" class="form-control form-control-sm" id="search-prompt"
+                                           placeholder="当前未接入，请留空">
+                                </div>
+                            </div>
+                            <div class="form-group row task-more" style="display: none">
+                                <label for="job-prompt"
+                                       class="col-sm-2 col-form-label col-form-label-sm text-right">
+
+                                    <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="在<span class='text-warning'>职位详情页</span>使用提示词对<span class='text-warning'>职位描述</span>进行匹配</span>（填写将启用该功能）"></span>
+                                    AI匹配（未接入）
+                                </label>
+                                <div class="col-sm-10">
+                                    <input type="text" class="form-control form-control-sm" id="job-prompt"
+                                           placeholder="当前未接入，请留空">
+                                </div>
+                            </div>
+                            <div class="form-group row task-more" style="display: none">
+                                <label for="search-re"
+                                       class="col-sm-2 col-form-label col-form-label-sm text-right">
+
+                                    <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="在<span class='text-warning'>职位列表页</span>使用正则表达式对<span class='text-warning'>职位名称</span>进行筛选（填写将启用该功能）"></span>
+                                    正则筛选职位
+                                </label>
+                                <div class="col-sm-10">
+                                    <input type="text" class="form-control form-control-sm bg-white" id="search-re"
+                                           placeholder="（选填）筛选职位列表名称的正则表达式" data-toggle="modal"
+                                           data-target="#regex-modal" data-whatever="search_re" readonly>
+                                </div>
+                            </div>
+                            <div class="form-group row task-more" style="display: none">
+                                <label for="job-re"
+                                       class="col-sm-2 col-form-label col-form-label-sm text-right">
+
+                                    <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="在<span class='text-warning'>职位详情页</span>使用正则表达式对<span class='text-warning'>职位描述</span>进行匹配（填写将启用该功能）"></span>
+                                    正则匹配职位
+                                </label>
+                                <div class="col-sm-10">
+                                    <input type="text" class="form-control form-control-sm bg-white" id="job-re"
+                                           placeholder="（选填）匹配职位描述的正则表达式" data-toggle="modal"
+                                           data-target="#regex-modal" data-whatever="job_re" readonly>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label
+                                        class="col-sm-2 col-form-label col-form-label-sm text-right">
+                                    <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="用简历与职位描述进行匹配。简历只作为匹配使用，不用于投递（填写将启用该功能）"></span>
+                                    本地简历文本
+                                </label>
+                                <div class="col-sm-3 pr-0">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="resume"
+                                            data-toggle="modal" data-target="#resume-modal" data-whatever="task">设置简历
+                                    </button>
+                                    <small class="text-muted ml-2" id="resume-tip"></small>
+                                    <input type="hidden" id="resume-path" class="d-none">
+                                </div>
+                                <label for="match-degree"
+                                       class="col-sm-2 col-form-label col-form-label-sm text-right">
+                                    <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="<span class='text-warning'>开启匹配简历后</span>达到设置的匹配度时投递简历"></span>
+                                    AI匹配度
+                                </label>
+                                <div class="col-sm-2">
+                                    <input type="number" class="form-control form-control-sm" id="match-degree" min="0"
+                                           max="95" value="0" placeholder="未接入，请填 0">
+                                </div>
+                                <label for="platform"
+                                       class="col-sm-1 col-form-label col-form-label-sm text-right">
+                                    <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="当前投递任务在<span class='text-warning'>投递所选平台时启用</span>"></span>
+                                    平台
+                                </label>
+                                <div class="col-sm-2">
+                                    <select class="custom-select custom-select-sm w-100 selectpicker" id="platform"
+                                            data-style="btn-sm" title="未选择" multiple
+                                            data-selected-text-format="count">
+                                        <option value="BOSS直聘" selected>BOSS直聘</option>
+                                        <option value="智联招聘" selected>智联招聘</option>
+                                        <option value="前程无忧" selected>前程无忧</option>
+                                        <option value="应届生" selected>应届生</option>
+                                        <option value="猎聘">猎聘（待校准）</option>
+                                        <option value="拉勾">拉勾（待校准）</option>
+                                        <option value="牛客网">牛客网（待校准）</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-8">
+                                    <button type="button" class="btn btn-link btn-sm" id="task-more-btn">
+                                        更多设置
+                                    </button>
+                                </div>
+                                <div class="col-2">
+                                    <button type="button" class="btn btn-outline-primary btn-sm w-100 d-none"
+                                            id="alter-task">
+                                        修改任务
+                                    </button>
+                                </div>
+                                <div class="col-2">
+                                    <button type="button" class="btn btn-primary btn-sm w-100" id="save-task">保存任务
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="apply-setting" role="tabpanel">
+                <form>
+                    <div class="form-group row">
+                        <label for="exclude-sales-roles" class="col-sm-2 col-form-label col-form-label-sm text-right">屏蔽销售岗位</label>
+                        <div class="col-sm-10">
+                            <div class="custom-control custom-checkbox mr-sm-2 d-inline">
+                                <input type="checkbox" class="custom-control-input" id="exclude-sales-roles">
+                                <label class="custom-control-label" for="exclude-sales-roles">开启后根据岗位名称和职责判断；不确定的岗位暂停自动沟通</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="pick-platform-resume" class="col-sm-2 col-form-label col-form-label-sm text-right">附件简历</label>
+                        <div class="col-sm-10">
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="pick-platform-resume">选择 PDF/DOCX</button>
+                            <select id="resume-platform" class="form-control form-control-sm d-inline-block ml-2" style="width: 126px">
+                                <option value="BOSS直聘">BOSS直聘</option>
+                                <option value="智联招聘">智联招聘</option>
+                                <option value="前程无忧">前程无忧</option>
+                                <option value="应届生">应届生</option>
+                                <option value="猎聘">猎聘</option>
+                                <option value="拉勾">拉勾</option>
+                            </select>
+                            <button type="button" class="btn btn-outline-primary btn-sm ml-2" id="upload-platform-resume">上传到当前网站</button>
+                            <small class="text-muted ml-2" id="platform-resume-path">未选择文件</small>
+                            <small class="form-text text-muted">先在内置浏览器手动登录所选网站，再打开该网站的简历管理页；网站显示成功才算上传完成。</small>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="intelligent-perception"
+                               class="col-sm-2 col-form-label col-form-label-sm text-right">
+                                    <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="自动跳过投递完的职位"></span>
+                            智能感知
+                        </label>
+                        <div class="col-sm-5">
+                            <select class="custom-select custom-select-sm selectpicker w-100" title="关闭"
+                                    id="intelligent-perception"
+                                    data-style="btn-sm">
+                                <option value="on" selected>开启</option>
+                                <option value="off">关闭</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="company-filter"
+                               class="col-sm-2 col-form-label col-form-label-sm text-right">
+                            <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="排除投递过的公司"></span>
+                            过滤已投公司
+                        </label>
+                        <div class="col-sm-5">
+                            <select class="custom-select custom-select-sm selectpicker w-100" title="不过滤"
+                                    id="company-filter"
+                                    data-style="btn-sm">
+                                <option value="不过滤" selected>不过滤</option>
+                                <option value="过滤10天内同一平台投递过的公司">过滤10天内同一平台投递过的公司</option>
+                                <option value="过滤10天内不同平台投递过的公司">过滤10天内不同平台投递过的公司</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="off-site-filter"
+                               class="col-sm-2 col-form-label col-form-label-sm text-right">
+                            <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="部分平台搜索结果包含异地职位默认将进行过滤，也可在平台关闭异地职位显示"></span>
+                            过滤异地职位
+                        </label>
+                        <div class="col-sm-5">
+                            <select class="custom-select custom-select-sm selectpicker w-100" title="过滤"
+                                    id="off-site-filter"
+                                    data-style="btn-sm">
+                                <option value="过滤" selected>过滤</option>
+                                <option value="不过滤">不过滤</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="pages" class="col-sm-2 col-form-label col-form-label-sm text-right">
+                            <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="每次搜索的最大搜索页数，默认无限制"></span>
+                            搜索页数
+                        </label>
+                        <div class="col-sm-5">
+                            <input type="number" class="form-control form-control-sm" min="1" max="9999"
+                                   id="pages" placeholder="不限">
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="chat-resume"
+                               class="col-sm-2 col-form-label col-form-label-sm text-right">
+                            <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="AI自动回复所使用的简历，AI将根据个人简历内容回复招聘者"></span>
+                            AI回复简历
+                        </label>
+                        <div class="col-sm-9">
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="chat-resume"
+                                    data-toggle="modal" data-target="#resume-modal" data-whatever="chat">设置简历
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="chat-prompt"
+                               class="col-sm-2 col-form-label col-form-label-sm text-right">
+                            <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="设置回复招聘者时对回复内容有额外要求的提示词"></span>
+                            AI回复要求
+                        </label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control form-control-sm flex-grow-1" id="chat-prompt"
+                                   placeholder="（选填）填写生成字数、语气、格式等要求的提示词">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="tab-pane fade h-100" id="software-setting" role="tabpanel">
+
+                <form>
+                    <div class="form-group row">
+                        <label
+                               class="col-sm-2 col-form-label col-form-label-sm text-right">
+                            <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="登录与职位筛选共用程序内的 WebView2 浏览器"></span>
+                            浏览器
+                        </label>
+                        <div class="col-sm-8">
+                            <div class="form-control-plaintext small">内置浏览器（Microsoft Edge WebView2）；请在主窗口打开并自行登录</div>
+                        </div>
+                    </div>
+                    <div class="form-group row bit-browser-setting d-none">
+                        <label for="bit-port"
+                               class="col-sm-2 col-form-label col-form-label-sm text-right">
+                            <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="使用比特浏览器的额外设置，在比特浏览器创建浏览器窗口，将比特浏览器所使用的端口和创建的浏览器窗口ID填入此处"></span>
+                            比特浏览器
+                        </label>
+                        <div class="col-sm-4">
+                            <input type="text" class="form-control form-control-sm text-center" placeholder="端口"
+                                   id="bit-port">
+                        </div>
+                        <div class="col-sm-4">
+                            <input type="text" class="form-control form-control-sm text-center" placeholder="窗口ID"
+                                   id="bit-window-id">
+                        </div>
+                    </div>
+                    <div class="form-group row d-none">
+                        <label for="chromium-path" class="col-sm-2 col-form-label col-form-label-sm text-right">
+                            <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="使用Chromium内核浏览器的额外设置，选择所使用浏览器的程序文件"></span>
+                            Chromium浏览器
+                        </label>
+                        <div class="col-sm-8">
+                            <button type="button" class="btn btn-outline-primary btn-sm px-0 w-100" id="chromium-path">
+                                选择浏览器程序
+                            </button>
+                        </div>
+                        <!--                        <div class="col-sm-5 pr-0">-->
+                        <!--                            <small class="text-muted hide-text" id="chromium-path-text"></small>-->
+                        <!--                        </div>-->
+                    </div>
+                    <div class="form-group row d-none">
+                        <label for="off-site-filter"
+                               class="col-sm-2 col-form-label col-form-label-sm text-right">
+                            <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="开启后浏览器将不会显示图片，平台有图片人机验证时将无法显示"></span>
+                            禁止加载图片
+                        </label>
+                        <div class="col-sm-8">
+                            <select class="custom-select custom-select-sm selectpicker w-100" title="不禁止"
+                                    id="disable-image"
+                                    data-style="btn-sm">
+                                <option value="不禁止" selected>不禁止</option>
+                                <option value="禁止">禁止</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group row d-none">
+                        <label for="browser-run"
+                               class="col-sm-2 col-form-label col-form-label-sm text-right">
+                            <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="投递时隐藏浏览器窗口"></span>
+                            隐藏浏览器
+                        </label>
+                        <div class="col-sm-8">
+                            <select class="custom-select custom-select-sm selectpicker w-100" title="不隐藏"
+                                    id="browser-run"
+                                    data-style="btn-sm">
+                                <option value="不隐藏" selected>不隐藏</option>
+                                <option value="隐藏窗口">隐藏</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="miao"
+                               class="col-sm-2 col-form-label col-form-label-sm text-right">
+                            <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="填入喵码将开启投递提醒"></span>
+                            喵提醒喵码
+                        </label>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control form-control-sm"
+                                   placeholder="在“喵提醒”公众号创建提醒单后填入喵码"
+                                   id="miao">
+                        </div>
+                        <div class="col-sm-2 pl-0">
+                            <button type="button" class="btn btn-outline-primary btn-sm w-100" id="send-miao-test">
+                                发送测试提醒
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group row d-none d-biz">
+                        <label for="apply-scope"
+                               class="col-sm-2 col-form-label col-form-label-sm text-right">
+                            <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="当前：多账号投递时单独记录，适合多人投递<br>全局：多账号投递时共享记录，适合单人投递"></span>
+                            投递记录数据
+                        </label>
+                        <div class="col-sm-4 pr-0">
+                            <select class="custom-select custom-select-sm selectpicker w-100"
+                                    title="当前软件数据" id="apply-scope"
+                                    data-style="btn-sm">
+                                <option value="当前" selected>当前软件数据</option>
+                                <option value="全局">全局数据</option>
+                            </select>
+                        </div>
+                        <!--                        <label for="chat-scope"-->
+                        <!--                               class="col-sm-2 col-form-label col-form-label-sm text-right pr-3">回复记录数据</label>-->
+                        <!--                        <div class="col-sm-2 pl-0">-->
+                        <!--                            <select class="custom-select custom-select-sm selectpicker w-100"-->
+                        <!--                                    title="当前软件数据" id="chat-scope"-->
+                        <!--                                    data-style="btn-sm">-->
+                        <!--                                <option value="当前" selected>当前软件数据</option>-->
+                        <!--                                <option value="全局">全局数据</option>-->
+                        <!--                            </select>-->
+                        <!--                        </div>-->
+                        <label for="task-scope"
+                               class="col-sm-2 col-form-label col-form-label-sm text-right pr-3">
+                            <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="当前：多账号投递时使用单独设置，适合多人投递<br>全局：多账号投递时使用同一设置，适合单人投递"></span>
+                            投递设置数据
+                        </label>
+                        <div class="col-sm-4 pl-0">
+                            <select class="custom-select custom-select-sm selectpicker w-100"
+                                    title="当前软件数据" id="task-scope"
+                                    data-style="btn-sm">
+                                <option value="当前" selected>当前软件数据</option>
+                                <option value="全局">全局数据</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group row mcp-row">
+                        <label for="mcp" class="col-sm-2 col-form-label col-form-label-sm text-right">
+                            <span class="icon-tip" data-toggle="tooltip" data-html="true"
+                                          title="将全职高手作为MCP提供大模型操作能力"></span>
+                            MCP服务
+                        </label>
+                        <div class="col-sm-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm px-0 w-100" id="mcp">
+                                启动MCP
+                            </button>
+                        </div>
+                        <div class="col-sm-8 pl-0">
+                            <small class="text-muted hide-text" id="mcp-status"></small>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <small class="col-sm-10 offset-2 text-muted">
+                            版本：<span id="version">？</span>
+                        </small>
+                    </div>
+                </form>
+            </div>
+            <div class="tab-pane fade h-100" id="blocklist-setting" role="tabpanel">
+                <div class="d-flex flex-column h-100">
+                    <div class="d-flex">
+                        <input type="text" class="form-control form-control-sm flex-grow-1"
+                               placeholder="请输入公司名简称（支持正则表达式）"
+                               id="blocklist-company">
+                        <button type="button" class="save-blocklist btn btn-primary btn-sm ml-2 text-nowrap"
+                                id="save-blocklist">添加
+                        </button>
+                    </div>
+                    <div class="blocklist-container flex-grow-1 p-2 mt-2 rounded-lg">
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade h-100 platform-setting" id="boss-setting" role="tabpanel">
+                <form>
+                </form>
+            </div>
+            <div class="tab-pane fade h-100 platform-setting" id="zhilian-setting" role="tabpanel">
+                <form>
+                </form>
+            </div>
+            <div class="tab-pane fade h-100 platform-setting" id="qiancheng-setting" role="tabpanel">
+                <form>
+                </form>
+            </div>
+            <div class="tab-pane fade h-100 platform-setting" id="lagou-setting" role="tabpanel">
+                <form>
+                </form>
+            </div>
+            <div class="tab-pane fade h-100 platform-setting" id="liepin-setting" role="tabpanel">
+                <form>
+                </form>
+            </div>
+            <div class="tab-pane fade h-100 platform-setting" id="yjs-setting" role="tabpanel">
+                <form>
+                </form>
+            </div>
+            <div class="tab-pane fade h-100 platform-setting" id="guopin-setting" role="tabpanel">
+                <form>
+                </form>
+            </div>
+            <div class="tab-pane fade h-100 platform-setting" id="gdzhzp-setting" role="tabpanel">
+                <form>
+                </form>
+            </div>
+            <div class="tab-pane fade h-100 platform-setting" id="niuke-setting" role="tabpanel">
+                <form>
+                </form>
+            </div>
+            <div class="tab-pane fade h-100 platform-setting" id="jobonline-setting" role="tabpanel">
+                <form>
+                </form>
+            </div>
+            <div class="tab-pane fade h-100 platform-setting" id="jobmdcn-setting" role="tabpanel">
+                <form>
+                </form>
+            </div>
+            <div class="tab-pane fade h-100 platform-setting" id="offertoday-setting" role="tabpanel">
+                <form>
+                </form>
+            </div>
+            <div class="tab-pane fade h-100 platform-setting" id="jobsdbhk-setting" role="tabpanel">
+                <form>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="tip-modal" tabindex="-1" aria-labelledby="tip-title">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="tip-title"></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body py-0"></div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-primary btn-sm" data-dismiss="modal">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="regex-modal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">正则表达式</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <form>
+                            <div class="form-group row">
+                                <label for="include_keyword" class="col-sm-3 col-form-label">包含关键词</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="include_keyword" placeholder="多个关键词用空格分开">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="exclude_keyword" class="col-sm-3 col-form-label">不包含关键词</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="exclude_keyword" placeholder="多个关键词用空格分开">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="regex" class="col-sm-3 col-form-label">正则表达式</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="regex" placeholder="填写关键词后生成或自定义正则表达式">
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="resume-modal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">设置简历</h5>
+                <button type="button" class="btn btn-sm btn-primary ml-2" id="resume-modal-import">导入简历</button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <textarea class="form-control" id="resume-modal-edit" rows="22"
+                                  placeholder="填写/粘贴简历内容"></textarea>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="static/js/jquery.slim.min.js"></script>
+<script src="static/js/popper.min.js"></script>
+<script src="static/js/bootstrap.min.js"></script>
+<script src="static/js/bootstrap.bundle.min.js"></script>
+<script src="static/js/bootstrap-datepicker.min.js"></script>
+<script src="static/js/bootstrap-datepicker.zh-CN.min.js"></script>
+<script src="static/js/bootstrap-select.min.js"></script>
+<script src="static/js/bootstrap-table.min.js"></script>
+<script src="static/js/bootstrap-table-locale-all.min.js"></script>
+<script src="static/js/common.js"></script>
+<script src="static/js/setting.js"></script>
+</body>
+</html>

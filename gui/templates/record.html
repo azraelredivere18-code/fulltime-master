@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh.cn">
+<head>
+    <meta charset="UTF-8">
+    <title>投递记录</title>
+    <link rel="stylesheet" href="static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="static/css/bootstrap-datepicker3.min.css">
+    <link rel="stylesheet" href="static/css/bootstrap-table.min.css">
+    <link rel="stylesheet" href="static/icon/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="static/css/style.css">
+    <link rel="stylesheet" href="static/css/app-icons.css">
+    <link rel="stylesheet" href="static/css/redesign.css">
+</head>
+<body class="record-window">
+<div class="d-flex flex-column h-100">
+    <div class="header pywebview-drag-region">
+        <div class="topbar d-none justify-content-between">
+            <span>投递记录</span>
+            <span class="icon-close" onclick="pywebview.api.close_current_window()"></span>
+        </div>
+    </div>
+    <div class="body flex-grow-1 bg-white rounded-lg">
+        <form class="form-inline">
+            <div class="nav flex-column nav-pills d-inline" role="tablist">
+                <a type="button" class="btn btn-info btn-sm" id="apply" data-toggle="pill" href="#apply-record">投递记录</a>
+                <a type="button" class="btn btn-success btn-sm ml-2" id="chat" data-toggle="pill" href="#chat-record">回复记录</a>
+                <a type="button" class="btn btn-warning btn-sm ml-2" id="dashboard" data-toggle="pill" href="#dashboard-record">数据统计</a>
+            </div>
+            <div class="form-group2 ml-2">
+                <label for="start-date" class="sr-only">开始日期</label>
+                <input type="text" class="form-control form-control-sm datepicker" id="start-date" placeholder="开始日期" readonly>
+            </div>
+            <div class="form-group mx-2">
+                <label for="end-date" class="sr-only">结束日期</label>
+                <input type="text" class="form-control form-control-sm datepicker" id="end-date" placeholder="结束日期" readonly>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" id="date-filter">筛选</button>
+            <button type="button" class="btn btn-secondary btn-sm ml-2" id="reset" data-toggle="tooltip" data-placement="bottom" title="重置日期筛选">重置</button>
+            <button type="button" class="btn btn-info btn-sm ml-2" id="backfill-records">补全旧记录</button>
+            <span class="ml-2 small" id="backfill-status"></span>
+        </form>
+        <p id="record-summary" role="status">正在读取记录…</p>
+        <div class="tab-content" id="pills-tabContent">
+          <div class="tab-pane fade show active" id="apply-record" role="tabpanel">
+              <table id="record-table" data-show-export="true"></table>
+          </div>
+          <div class="tab-pane fade" id="chat-record" role="tabpanel">
+              <table id="chat-table" data-show-export="true"></table>
+          </div>
+          <div class="tab-pane fade" id="dashboard-record" role="tabpanel">
+              <div class="container-fluid mt-5">
+                  <div class="row">
+                      <div class="col-md-4 mb-2 text-center">
+                          <h6 class="text-center">7日投递数量趋势</h6>
+                          <canvas id="dailyTrendChart" height="200"></canvas>
+                      </div>
+                      <div class="col-md-4 mb-2 text-center">
+                          <h6 class="text-center">今日投递平台占比</h6>
+                          <canvas id="platformPieChart" height="200"></canvas>
+                      </div>
+                      <div class="col-md-4 mb-2 text-center">
+                          <h6 class="text-center">今日投递匹配度占比</h6>
+                          <canvas id="matchDegreePieChart" height="200"></canvas>
+                      </div>
+                  </div>
+              </div>
+          </div>
+        </div>
+<!--        <div>-->
+<!--            <table id="record-table" data-show-export="true"></table>-->
+<!--        </div>-->
+    </div>
+</div>
+<div class="modal fade" id="tip-modal" tabindex="-1" aria-labelledby="tip-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="tip-title"></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body py-0"></div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-primary btn-sm" data-dismiss="modal">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="static/js/jquery.slim.min.js"></script>
+<script src="static/js/tableExport.min.js"></script>
+<script src="static/js/popper.min.js"></script>
+<script src="static/js/bootstrap.min.js"></script>
+<script src="static/js/bootstrap-datepicker.min.js"></script>
+<script src="static/js/bootstrap-datepicker.zh-CN.min.js"></script>
+<script src="static/js/bootstrap-table.min.js"></script>
+<script src="static/js/bootstrap-table-locale-all.min.js"></script>
+<script src="static/js/bootstrap-table-filter-control.min.js"></script>
+<script src="static/js/bootstrap-table-export.min.js"></script>
+<script src="static/js/chart.umd.min.js"></script>
+<script src="static/js/common.js"></script>
+<script src="static/js/record_metrics.js"></script>
+<script src="static/js/record.js"></script>
+</body>
+</html>
