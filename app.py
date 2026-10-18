@@ -20,7 +20,7 @@ from urllib.parse import urlsplit
 from backend import LocalStore, china_day
 
 
-VERSION = "0.12.0"
+VERSION = "0.13.0"
 WINDOWS = {
     "index": ("全职高手", "index.html", 660, 760),
     "setting": ("设置", "setting.html", 1120, 760),
@@ -60,16 +60,29 @@ class WindowAPI(LocalStore):
     def start(self, platform: str, mode: str | None = None) -> str:
         return self._manager.start_automation(platform, mode)
 
-    def stop(self) -> str:
-        return self._manager.stop_automation()
+    def stop(self, platform: str | None = None) -> str:
+        return self._manager.stop_automation(platform)
 
-    def get_run_status(self) -> dict:
-        controller = self._manager.controller
-        status = controller.get_run_status() if controller else {
-            "running": False, "message": "未运行", "current": 0, "total": 0, "saved": 0
-        }
+    def get_run_status(self, platform: str | None = None) -> dict:
+        statuses = self._manager.controller_statuses()
+        if platform:
+            status = statuses.get(platform, {
+                "running": False, "message": "未运行", "current": 0,
+                "total": 0, "saved": 0, "platform": platform,
+            })
+        else:
+            running = [value for value in statuses.values() if value.get("running")]
+            status = {
+                "running": bool(running), "message": "；".join(
+                    f"{value.get('platform')}: {value.get('message')}" for value in running) or "未运行",
+                "current": sum(int(value.get("current") or 0) for value in running),
+                "total": sum(int(value.get("total") or 0) for value in running),
+                "saved": sum(int(value.get("saved") or 0) for value in running),
+                "applied": sum(int(value.get("applied") or 0) for value in running),
+                "platforms": statuses,
+            }
         scheduler = self._manager.scheduler
-        if not status["running"] and scheduler:
+        if not status["running"] and scheduler and not platform:
             status["message"] = scheduler.current_message() or status["message"]
         return status
 
@@ -78,7 +91,7 @@ class WindowAPI(LocalStore):
             from automation import BOSS_HOME
             from site_adapters import SITES
             home = BOSS_HOME if platform == "BOSS直聘" else SITES[platform].home
-            self._manager.open_browser_window(initial_url=home)
+            self._manager.open_browser_window(initial_url=home, platform=platform)
             return True
         except KeyError:
             return f"{platform} 的内置浏览器适配器尚未完成"
@@ -86,7 +99,7 @@ class WindowAPI(LocalStore):
             return f"内置浏览器打开失败：{exc}"
 
     def get_login_status(self, platform: str = "BOSS直聘") -> str:
-        if self._manager.current_browser_window() is None:
+        if self._manager.current_browser_window(platform) is None:
             return "browser_closed"
         from embedded_browser import EmbeddedBossPage
         try:
@@ -102,7 +115,7 @@ class WindowAPI(LocalStore):
         site = SITES.get(platform)
         if platform != "BOSS直聘" and site is None:
             return {"state": "unsupported", "reason": "当前网站没有页面诊断适配器"}
-        if self._manager.current_browser_window() is None:
+        if self._manager.current_browser_window(platform) is None:
             return {"state": "browser_closed", "reason": "请先打开内置浏览器"}
         if platform == "BOSS直聘":
             from embedded_browser import EmbeddedBossPage
@@ -139,7 +152,7 @@ class WindowAPI(LocalStore):
         path = self.get_apply_config("resume_file")
         if not path:
             return {"state": "invalid_file", "reason": "请先选择本地简历文件"}
-        if self._manager.current_browser_window() is None:
+        if self._manager.current_browser_window(platform) is None:
             return {"state": "browser_closed", "reason": "请先打开内置浏览器并手动登录"}
         try:
             if platform == "BOSS直聘":
@@ -316,7 +329,7 @@ class WindowAPI(LocalStore):
         return webbrowser.open(url)
 
     def signout(self, platform: str) -> bool:
-        controller = self._manager.controller
+        controller = self._manager.controllers.get(platform)
         return bool(controller and hasattr(controller, "signout") and controller.signout(platform))
 
     def update_timing(self) -> bool:
@@ -362,18 +375,33 @@ class WindowManager:
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.db_path = self.data_dir / "app.sqlite3"
         self._lock = threading.RLock()
+        self._launch_lock = threading.RLock()
         self._windows: dict[str, WindowAPI] = {}
         self._browser_window = None
+        self._browser_windows: dict[str, object] = {}
         self._official_browser_window = None
         self._official_trusted_host = ""
         self._official_pending_url = ""
         self._official_preview: dict | None = None
         self._detail_windows: set = set()
         self.controller = None
+        self.controllers: dict[str, object] = {}
         self.scheduler = None
         self._backfill_thread: threading.Thread | None = None
         self._backfill_status = {"running": False, "checked": 0, "total": 0,
                                  "updated": 0, "message": "未开始"}
+
+    def controller_statuses(self) -> dict[str, dict]:
+        with self._lock:
+            controllers = dict(self.controllers)
+            if self.controller is not None:
+                controllers.setdefault(self.controller.platform_name, self.controller)
+        return {platform: controller.get_run_status()
+                for platform, controller in controllers.items()}
+
+    def active_platforms(self) -> set[str]:
+        return {platform for platform, status in self.controller_statuses().items()
+                if status.get("running")}
 
     def get_record_backfill_status(self) -> dict:
         with self._lock:
@@ -382,11 +410,11 @@ class WindowManager:
     def start_record_backfill(self) -> dict:
         from embedded_browser import EmbeddedBossPage
         from site_adapters import EmbeddedSitePage, SITES
+        if self.active_platforms():
+            return {"running": False, "message": "请先停止自动投递任务"}
         with self._lock:
             if self._backfill_thread and self._backfill_thread.is_alive():
                 return dict(self._backfill_status)
-            if self.controller and self.controller.get_run_status()["running"]:
-                return {"running": False, "message": "请先停止当前筛选或沟通任务"}
             if self.current_browser_window() is None:
                 return {"running": False, "message": "请先打开内置浏览器并手动登录相应招聘网站"}
             try:
@@ -468,52 +496,70 @@ class WindowManager:
     def _on_closed(self, kind: str) -> None:
         if kind == "index" and self.scheduler:
             self.scheduler.close()
+        if kind == "index":
+            with self._lock:
+                controllers = list(dict.fromkeys([*self.controllers.values(), self.controller]))
+            for controller in controllers:
+                if controller is not None:
+                    controller.close()
+            self.close_browser_window()
+            self.close_official_browser_window()
         with self._lock:
             api = self._windows.pop(kind, None)
             if api:
                 api.close()
-            if kind == "index" and self.controller:
-                self.controller.close()
-            elif kind == "index":
-                self.close_browser_window()
-            if kind == "index":
-                self.close_official_browser_window()
 
-    def current_browser_window(self):
+    def current_browser_window(self, platform: str | None = None):
         with self._lock:
-            window = self._browser_window
+            window = self._browser_windows.get(platform) if platform else self._browser_window
+            if platform == "BOSS直聘" and window is None and not self._browser_windows:
+                window = self._browser_window
             return window if window is not None and not window.events.closed.is_set() else None
 
     def _on_browser_closed(self, window) -> None:
         with self._lock:
+            for platform, candidate in list(self._browser_windows.items()):
+                if candidate is window:
+                    self._browser_windows.pop(platform, None)
             if self._browser_window is window:
-                self._browser_window = None
+                self._browser_window = next(iter(self._browser_windows.values()), None)
 
-    def open_browser_window(self, initial_url: str | None = None):
+    def open_browser_window(self, initial_url: str | None = None,
+                            platform: str | None = None):
         import webview
         from automation import BOSS_HOME
+        from site_adapters import SITES
 
+        if platform is None:
+            host = urlsplit(initial_url or "").hostname
+            platform = next((name for name, site in SITES.items() if host in site.hosts),
+                            "BOSS直聘")
+        if platform != "BOSS直聘" and platform not in SITES:
+            raise ValueError("招聘平台不受支持")
+
+        running_here = platform in self.active_platforms()
         with self._lock:
-            window = self.current_browser_window()
+            window = self.current_browser_window(platform)
             if window is not None:
                 if initial_url:
                     from urllib.parse import urlparse
                     current_host = urlparse(str(window.get_current_url() or "")).hostname
                     requested_host = urlparse(initial_url).hostname
-                    if current_host != requested_host:
-                        if self.controller and self.controller.get_run_status()["running"]:
-                            raise RuntimeError("请先停止当前网站任务，再切换浏览器网站")
+                    if current_host != requested_host and not running_here:
                         window.load_url(initial_url)
                 window.show()
+                self._browser_window = window
                 return window
             window = webview.create_window(
-                "全职高手 · 招聘网站", url=initial_url or BOSS_HOME, width=1180, height=820,
+                "全职高手 · " + platform, url=initial_url or BOSS_HOME,
+                width=1180, height=820,
                 min_size=(680, 480), js_api=None,
             )
             window.events.closed += lambda: self._on_browser_closed(window)
+            self._browser_windows[platform] = window
             self._browser_window = window
         if not window.events.loaded.wait(30):
-            self.close_browser_window()
+            self.close_browser_window(platform)
             raise RuntimeError("内置浏览器未能加载")
         return window
 
@@ -539,7 +585,7 @@ class WindowManager:
         from official_apply import normalize_official_url
 
         url = normalize_official_url(value)
-        if self.controller and self.controller.get_run_status()["running"]:
+        if self.active_platforms():
             raise RuntimeError("请先停止自动投递任务，再打开企业官网")
         host = urlsplit(url).hostname or ""
         with self._lock:
@@ -651,24 +697,34 @@ class WindowManager:
             raise RuntimeError("职位详情加载超时")
         return window
 
-    def close_browser_window(self) -> None:
+    def close_browser_window(self, platform: str | None = None) -> None:
         with self._lock:
-            window, self._browser_window = self._browser_window, None
-        if window is not None and not window.events.closed.is_set():
-            window.destroy()
+            if platform:
+                window = self._browser_windows.pop(platform, None)
+                if window is None and platform == "BOSS直聘" and not self._browser_windows:
+                    window = self._browser_window
+                windows = [window] if window is not None else []
+            else:
+                windows = list(self._browser_windows.values())
+                if self._browser_window is not None and self._browser_window not in windows:
+                    windows.append(self._browser_window)
+                self._browser_windows.clear()
+            if self._browser_window in windows:
+                self._browser_window = next(iter(self._browser_windows.values()), None)
+        for window in windows:
+            if not window.events.closed.is_set():
+                window.destroy()
 
     def ensure_controller(self, platform: str = "BOSS直聘"):
         with self._lock:
-            if self.controller is not None and self.controller.platform_name != platform:
-                if self.controller.get_run_status()["running"]:
-                    raise RuntimeError("请先停止当前网站任务")
-                self.controller.stop()
-                self.controller = None
-            if self.controller is None:
+            controller = self.controllers.get(platform)
+            if controller is None and self.controller is not None and self.controller.platform_name == platform:
+                controller = self.controller
+            if controller is None:
                 if platform == "BOSS直聘":
                     from automation import AutomationController
                     from embedded_browser import EmbeddedBossPage
-                    self.controller = AutomationController(
+                    controller = AutomationController(
                         self._windows["index"], config_dir=bundle_dir() / "config",
                         page_factory=lambda: EmbeddedBossPage(self),
                     )
@@ -676,36 +732,52 @@ class WindowManager:
                     from site_adapters import EmbeddedSitePage, SITES
                     from site_automation import SiteAutomationController
                     site = SITES[platform]
-                    self.controller = SiteAutomationController(
+                    controller = SiteAutomationController(
                         self._windows["index"], site=site,
                         config_dir=bundle_dir() / "config",
                         page_factory=lambda: EmbeddedSitePage(self, site),
                     )
-            return self.controller
+                self.controllers[platform] = controller
+            self.controller = controller
+            return controller
 
     def start_automation(self, platform: str, mode: str | None = None) -> str:
-        if self._backfill_thread and self._backfill_thread.is_alive():
-            return "正在补全旧记录，请等待完成后再开始任务"
-        if mode not in {None, "apply_mode"}:
-            return "运行方式仅支持自动投递"
-        if self.controller and self.controller.get_run_status()["running"]:
-            return "已有任务运行中，请先停止"
-        if self.current_browser_window() is None:
-            return "请先打开内置浏览器，手动登录并准备网站简历"
-        state = self._windows["index"].get_login_status(platform)
-        if state != "logged_in":
-            return "请先在内置浏览器手动完成登录或安全验证，确认登录后再开始自动投递"
-        self._windows["index"].set_apply_config("work_mode", "apply_mode")
-        try:
-            return self.ensure_controller(platform).start(platform)
-        except KeyError:
-            return f"{platform} 的自动化适配器尚未完成"
-        except Exception as exc:
-            return f"启动失败：{exc}"
+        with self._launch_lock:
+            if self._backfill_thread and self._backfill_thread.is_alive():
+                return "正在补全旧记录，请等待完成后再开始任务"
+            if mode not in {None, "apply_mode"}:
+                return "运行方式仅支持自动投递"
+            statuses = self.controller_statuses()
+            active = {name for name, status in statuses.items() if status.get("running")}
+            if platform in active:
+                return "正在停止，请稍候重试" if statuses[platform].get("stopping") else "已运行"
+            if len(active) >= 2:
+                return "最多同时运行两个平台，请先停止其中一个"
+            if self.current_browser_window(platform) is None:
+                return f"请先打开{platform}内置浏览器，手动登录并准备网站简历"
+            state = self._windows["index"].get_login_status(platform)
+            if state != "logged_in":
+                return f"请先在{platform}内置浏览器手动完成登录或安全验证"
+            self._windows["index"].set_apply_config("work_mode", "apply_mode")
+            try:
+                return self.ensure_controller(platform).start(platform)
+            except KeyError:
+                return f"{platform} 的自动化适配器尚未完成"
+            except Exception as exc:
+                return f"启动失败：{exc}"
 
-    def stop_automation(self) -> str:
-        with self._lock:
-            return self.controller.stop() if self.controller else "已停止"
+    def stop_automation(self, platform: str | None = None) -> str:
+        with self._launch_lock:
+            if platform:
+                controller = self.controllers.get(platform)
+                if controller is None and self.controller is not None and self.controller.platform_name == platform:
+                    controller = self.controller
+                return controller.stop() if controller else "已停止"
+            controllers = list(dict.fromkeys([*self.controllers.values(), self.controller]))
+            for controller in controllers:
+                if controller is not None:
+                    controller.stop()
+            return "已停止"
 
     def update_timing(self) -> bool:
         if self.scheduler is None:

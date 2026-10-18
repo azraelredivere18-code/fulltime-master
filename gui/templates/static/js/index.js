@@ -1,10 +1,8 @@
 
 function setStopStyle() {
     var applyButton = $('#start-apply')
-    var platform = $('.selected-platform')
     applyButton.removeClass('btn-danger')
     applyButton.addClass('btn-primary')
-    platform.removeAttr('disabled')
     applyButton.html(actionLabel(false))
 }
 
@@ -14,10 +12,8 @@ function actionLabel(stopping) {
 
 function setStartStyle() {
     var applyButton = $('#start-apply')
-    var platform = $('.selected-platform')
     applyButton.removeClass('btn-primary')
     applyButton.addClass('btn-danger')
-    platform.attr('disabled', 'disabled')
     applyButton.text(actionLabel(true))
 }
 
@@ -52,8 +48,8 @@ $(function () {
 
     $('.selected-platform').on('change', function() {
         var selectedValue = $(this).val();
-        var applyButton = $('#start-apply')
         var taskStatus = $('.task-show')
+        setStopStyle();
 
         pywebview.api.get_task(selectedValue).then(function (task) {
             if (task) {
@@ -63,11 +59,11 @@ $(function () {
             }
         })
 
-        if(applyButton.hasClass('btn-danger')){
-            return
-        }
-
-        applyButton.html(actionLabel(false));
+        pywebview.api.get_run_status(selectedValue).then(function (status) {
+            if ($('.selected-platform').val() !== selectedValue) return;
+            if (status && status.running) setStartStyle();
+            else setStopStyle();
+        });
         if(!taskStatus.text().includes('？')) taskStatus.removeClass('d-none');
     });
 
@@ -87,7 +83,7 @@ $(function () {
             })
 
         } else {
-            pywebview.api.stop().then(function (res) {
+            pywebview.api.stop(selectedPlatform).then(function (res) {
                 if (res == '已停止') {
                     setStopStyle()
                 }
@@ -120,33 +116,42 @@ $(function () {
     });
 
     window.addEventListener('pywebviewready', function () {
-        var manualLoginNotified = false;
+        var manualLoginNotified = {};
         function refreshRunStatus() {
             var platform = $('.selected-platform').val();
             pywebview.api.get_login_status(platform).then(function (state) {
+                if ($('.selected-platform').val() !== platform) return;
                 var labels = {logged_in:'已登录', logged_out:'未登录，请在内置浏览器手动登录',
                     verification:'请手动完成安全验证', browser_closed:'内置浏览器未打开', unknown:'待确认'};
                 $('#login-status').text('登录状态：' + (labels[state] || '待确认'));
                 $('.status-led').toggleClass('is-ready', state === 'logged_in');
-                if ((state === 'logged_out' || state === 'verification') && !manualLoginNotified) {
+                if ((state === 'logged_out' || state === 'verification') && !manualLoginNotified[platform]) {
                     showTip('info', '需要人工介入', state === 'logged_out' ?
                         '请在内置浏览器中手动登录' + platform + '。程序会等待登录完成。' :
                         '请在内置浏览器中手动完成安全验证。程序会等待验证完成。');
-                    manualLoginNotified = true;
+                    manualLoginNotified[platform] = true;
                 }
-                if (state === 'logged_in') manualLoginNotified = false;
+                if (state === 'logged_in') manualLoginNotified[platform] = false;
             });
             pywebview.api.get_run_status().then(function (status) {
-                if (!status || status.message === '未运行') return;
-                var quota = '；本工具今日已占用 ' + (status.daily_used || 0) + '/' + (status.daily_limit || 120) + ' 个名额' +
-                    (status.search_city ? '；' + status.search_city + '本轮 ' +
-                        (status.region_used || 0) + '/' + (status.region_target || 0) : '');
-                showStatue(status.message + '；已记录 ' + status.saved + ' 个职位；已确认' +
-                    (status.platform === 'BOSS直聘' ? '沟通 ' : '投递 ') +
-                    (status.applied || 0) + ' 个' + quota);
-                if (!status.running && $('#start-apply').hasClass('btn-danger')) {
-                    setStopStyle();
+                if (!status) return;
+                var selected = $('.selected-platform').val();
+                var statuses = status.platforms || {};
+                var selectedStatus = statuses[selected];
+                if (selectedStatus && selectedStatus.running) setStartStyle();
+                else setStopStyle();
+                var active = Object.values(statuses).filter(function (entry) { return entry.running; });
+                if (!active.length) {
+                    showStatue((selectedStatus && selectedStatus.message) || status.message || '尚未开始');
+                    return;
                 }
+                showStatue(active.map(function (entry) {
+                    return entry.platform + '：' + entry.message + '；已记录 ' +
+                        (entry.saved || 0) + '，已确认' +
+                        (entry.platform === 'BOSS直聘' ? '沟通 ' : '投递 ') +
+                        (entry.applied || 0) + '；今日名额 ' +
+                        (entry.daily_used || 0) + '/' + (entry.daily_limit || 0);
+                }).join('\n'));
             });
         }
         refreshRunStatus();

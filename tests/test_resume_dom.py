@@ -66,7 +66,7 @@ class ResumeDomTests(unittest.TestCase):
 
         class Manager:
             window = Window()
-            def current_browser_window(self):
+            def current_browser_window(self, platform=None):
                 return self.window
 
         manager = Manager()

@@ -180,7 +180,7 @@ class EmbeddedBossPage:
         self.manager = manager
 
     def _current_window(self) -> Any:
-        window = self.manager.current_browser_window()
+        window = self.manager.current_browser_window("BOSS直聘")
         if window is None:
             raise RuntimeError("内置浏览器已关闭，请点击“内置浏览器”重新打开")
         return window
@@ -192,7 +192,7 @@ class EmbeddedBossPage:
     def get(self, url: str) -> bool:
         if not _boss_url(url):
             raise ValueError("内置浏览器只能导航至 BOSS直聘")
-        window = self.manager.open_browser_window()
+        window = self.manager.open_browser_window(platform="BOSS直聘")
         window.load_url(url)
         if not window.events.loaded.wait(30):
             raise RuntimeError("内置浏览器加载超时，请查看浏览器窗口")
@@ -325,7 +325,7 @@ class EmbeddedBossPage:
         return EmbeddedDetailTab(self.manager.open_detail_window(url))
 
     def quit(self, **kwargs: Any) -> None:
-        self.manager.close_browser_window()
+        self.manager.close_browser_window("BOSS直聘")
 
 
 class EmbeddedDetailTab:

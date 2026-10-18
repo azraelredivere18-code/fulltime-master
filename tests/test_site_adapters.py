@@ -20,7 +20,7 @@ class SiteAdapterTests(unittest.TestCase):
                 self.script = script
                 return []
         browser = Browser()
-        manager = type("Manager", (), {"current_browser_window": lambda self: browser})()
+        manager = type("Manager", (), {"current_browser_window": lambda self, platform=None: browser})()
         site = SITES["牛客网"]
         EmbeddedSitePage(manager, site).eles("css:" + site.cards)
         harness = """

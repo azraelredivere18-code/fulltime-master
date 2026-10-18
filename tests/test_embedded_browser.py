@@ -37,10 +37,10 @@ class FakeManager:
         self.open_count = 0
         self.detail = FakeWindow("https://www.zhipin.com/job_detail/1.html", "支持远程")
 
-    def current_browser_window(self):
+    def current_browser_window(self, platform=None):
         return self.window
 
-    def open_browser_window(self):
+    def open_browser_window(self, platform=None):
         self.open_count += 1
         return self.window
 
@@ -48,7 +48,7 @@ class FakeManager:
         self.detail.url = url
         return self.detail
 
-    def close_browser_window(self):
+    def close_browser_window(self, platform=None):
         self.window = None
 
 

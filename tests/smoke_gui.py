@@ -7,6 +7,7 @@ import sys
 import tempfile
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -140,7 +141,8 @@ def main() -> None:
                     options: document.querySelectorAll('.selected-platform option').length,
                     bridge: typeof window.pywebview.api.get_tasks,
                     modeOptions: document.querySelectorAll('input[name="run-mode"]').length,
-                    notice: document.body.innerText.includes('自动投递')
+                    notice: document.body.innerText.includes('自动投递'),
+                    parallelInstruction: document.body.innerText.includes('最多同时运行两个平台')
                 })""")
                 setting = manager.open_window("setting")
                 setting.events.loaded.wait(15)
@@ -153,7 +155,8 @@ def main() -> None:
                 })""")
                 print(json.dumps({"main": main_result, "setting": setting_result}, ensure_ascii=False), flush=True)
                 if (main_result["options"] != 7 or main_result["modeOptions"] != 0
-                        or not main_result["notice"] or not setting_result["noFilterMode"]
+                        or not main_result["notice"] or not main_result["parallelInstruction"]
+                        or not setting_result["noFilterMode"]
                         or setting_result["employmentType"] != "full_time"
                         or setting.evaluate_js("document.querySelector('#recruitment-track').value") != "all"):
                     raise AssertionError("GUI failed to load expected options")
@@ -220,8 +223,23 @@ def main() -> None:
                 persisted = reopened.evaluate_js("document.cookie.includes('smoke_session=shared')")
                 if not persisted or len(page.eles(CARD_LOCATOR)) != 1:
                     raise AssertionError("Embedded browser did not recover after closing its window")
-                reopened.load_url(fixture_url + "/zhilian")
-                time.sleep(0.7)
+                parallel_browser = manager.open_browser_window(
+                    initial_url=fixture_url + "/zhilian", platform="智联招聘")
+                if (parallel_browser is reopened or
+                        manager.current_browser_window("BOSS直聘") is not reopened or
+                        manager.current_browser_window("智联招聘") is not parallel_browser):
+                    raise AssertionError("Two platform browser windows were not isolated")
+                with ThreadPoolExecutor(max_workers=2) as pool:
+                    paths = [future.result(timeout=10) for future in (
+                        pool.submit(reopened.run_js, "location.pathname"),
+                        pool.submit(parallel_browser.run_js, "location.pathname"))]
+                if paths != ["/cards", "/zhilian"]:
+                    raise AssertionError(f"Concurrent browser reads crossed windows: {paths}")
+                class SiteManager:
+                    def __init__(self, browser_window):
+                        self.browser_window = browser_window
+                    def current_browser_window(self, platform=None):
+                        return self.browser_window
                 z_page = EmbeddedSitePage(manager, SITES["智联招聘"])
                 z_cards = z_page.eles("css:" + SITES["智联招聘"].cards)
                 z_card = parse_site_card(z_cards[0], SITES["智联招聘"]) if z_cards else None
@@ -231,9 +249,12 @@ def main() -> None:
                 z_diag = z_page.diagnostics()
                 if z_diag["cardCount"] != 1 or ".job-card__job-name" not in z_diag["fields"]["title"]:
                     raise AssertionError(f"智联页面诊断失真：{z_diag}")
+                manager.close_browser_window("智联招聘")
+                if manager.current_browser_window("BOSS直聘") is not reopened:
+                    raise AssertionError("Closing one platform removed the other browser")
                 reopened.load_url(fixture_url + "/qiancheng")
                 time.sleep(0.7)
-                q_page = EmbeddedSitePage(manager, SITES["前程无忧"])
+                q_page = EmbeddedSitePage(SiteManager(reopened), SITES["前程无忧"])
                 q_cards = q_page.eles("css:" + SITES["前程无忧"].cards)
                 q_card = parse_site_card(q_cards[0], SITES["前程无忧"]) if q_cards else None
                 if not q_card or (q_card["title"], q_card["company"], q_card["salary"]) != (
@@ -257,11 +278,6 @@ def main() -> None:
                         return self.official_url
                     def run_js(self, script):
                         return self.browser_window.run_js(script)
-                class SiteManager:
-                    def __init__(self, browser_window):
-                        self.browser_window = browser_window
-                    def current_browser_window(self):
-                        return self.browser_window
                 reopened.load_url(fixture_url + "/zhilian_modal")
                 time.sleep(0.7)
                 z_modal = EmbeddedSitePage(SiteManager(SiteWindow(reopened,
@@ -316,7 +332,7 @@ def main() -> None:
                                   "apply_fixture": receipt, "upload_fixture": upload_text,
                                   "zhilian_cards": len(z_cards), "qiancheng_cards": len(q_cards),
                                   "zhilian_resume_modal": "sent", "qiancheng_receipt": "sent",
-                                  "site_login_states": "passed"},
+                                  "site_login_states": "passed", "parallel_windows": True},
                                  ensure_ascii=False), flush=True)
             except Exception as exc:
                 errors.append(exc)

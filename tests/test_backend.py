@@ -66,6 +66,50 @@ class BackendTests(unittest.TestCase):
         self.assertEqual(usage["total"], 2)
         self.assertEqual(usage["by_city"], {"北京": 1, "广州": 1})
 
+    def test_platform_slots_and_company_filter_are_atomic_across_connections(self):
+        day = "2026-10-17"
+        link = "https://example.com/jobs/shared"
+        self.assertEqual(self.backend.reserve_application_slot(
+            link, "上海", day=day, platform="BOSS直聘"), "reserved")
+        self.assertEqual(self.backend.reserve_application_slot(
+            link, "北京", day=day, platform="智联招聘"), "reserved")
+        self.assertEqual(self.backend.daily_application_usage(day, "BOSS直聘")["total"], 1)
+        self.assertEqual(self.backend.daily_application_usage(day, "智联招聘")["total"], 1)
+        self.backend.close()
+        self.backend = LocalBackend(self.path)
+        self.assertEqual(self.backend.daily_application_usage(day, "智联招聘")["total"], 1)
+
+        def reserve(index: int) -> str:
+            with LocalBackend(self.path) as store:
+                return store.reserve_application_slot(
+                    f"https://example.com/jobs/company-{index}", "上海", day=day,
+                    platform="BOSS直聘" if index == 1 else "智联招聘",
+                    company="同一家公司", company_filter="过滤10天内不同平台投递过的公司")
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            outcomes = list(pool.map(reserve, (1, 2)))
+        self.assertCountEqual(outcomes, ["reserved", "company_limit"])
+
+    def test_old_slot_primary_key_migrates_without_losing_usage(self):
+        self.backend.close()
+        import sqlite3
+        db = sqlite3.connect(self.path)
+        try:
+            db.execute("DROP TABLE application_slot")
+            db.execute("CREATE TABLE application_slot (day TEXT NOT NULL, link TEXT NOT NULL, "
+                       "platform TEXT NOT NULL DEFAULT 'BOSS直聘', city TEXT NOT NULL, "
+                       "state TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(day,link))")
+            db.execute("INSERT INTO application_slot VALUES(?,?,?,?,?,?)", (
+                "2026-10-17", "https://example.com/old", "BOSS直聘", "上海", "confirmed",
+                "2026-10-17T09:00:00"))
+            db.commit()
+        finally:
+            db.close()
+        self.backend = LocalBackend(self.path)
+        self.assertEqual(self.backend.daily_application_usage("2026-10-17")["total"], 1)
+        self.assertEqual(self.backend.reserve_application_slot(
+            "https://example.com/old", "广州", day="2026-10-17", platform="智联招聘"),
+            "reserved")
+
     def test_task_order_selection_and_restart(self):
         first = self.backend.save_task(task("Python", "BOSS直聘,猎聘"))
         second = self.backend.save_task(task("销售", "猎聘"))

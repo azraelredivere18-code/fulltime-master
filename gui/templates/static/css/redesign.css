@@ -119,7 +119,8 @@ body, .main-window, .setting-window, .record-window { color:var(--ink); backgrou
 .run-panel .task-show { color:var(--lime); font:700 12px Consolas,monospace; margin:9px 0; }
 .run-panel .task-show b { color:var(--ink); }
 .run-panel .status-show { color:#d5e5f2; background:#0d1526; border:1px solid #2c3f58;
-  border-left:3px solid var(--lime); border-radius:3px; padding:12px 13px !important; min-height:45px; }
+  border-left:3px solid var(--lime); border-radius:3px; padding:12px 13px !important; min-height:45px;
+  white-space:pre-line; }
 .app-actions { position:fixed; z-index:20; bottom:0; left:0; right:0; max-width:710px; margin:auto;
   padding:11px 28px 15px; background:#0b1020f2; border-top:1px solid #35516b;
   box-shadow:0 -12px 26px #050a17aa; }

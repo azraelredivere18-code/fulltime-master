@@ -189,7 +189,7 @@ class EmbeddedSitePage:
         self.manager, self.site = manager, site
 
     def _window(self):
-        window = self.manager.current_browser_window()
+        window = self.manager.current_browser_window(self.site.name)
         if window is None:
             raise RuntimeError("内置浏览器已关闭，请先打开并手动登录")
         return window
@@ -201,7 +201,7 @@ class EmbeddedSitePage:
     def get(self, url: str) -> bool:
         if not valid_site_url(self.site, url):
             raise ValueError("浏览器链接不属于当前招聘网站")
-        window = self.manager.open_browser_window(initial_url=url)
+        window = self.manager.open_browser_window(initial_url=url, platform=self.site.name)
         if window.get_current_url() != url:
             window.load_url(url)
         if not window.events.loaded.wait(30):
@@ -561,7 +561,7 @@ class EmbeddedSitePage:
                     pass
 
     def quit(self, **_: Any) -> None:
-        self.manager.close_browser_window()
+        self.manager.close_browser_window(self.site.name)
 
 
 class SiteDetailTab:

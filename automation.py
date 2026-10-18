@@ -446,7 +446,8 @@ class AutomationController:
         worker = self._worker
         usage = self.store.daily_application_usage(platform=self.platform_name)
         return {
-            "running": bool(worker and worker.is_alive() and not self._stop_event.is_set()),
+            "running": bool(worker and worker.is_alive()),
+            "stopping": bool(worker and worker.is_alive() and self._stop_event.is_set()),
             "message": self.status_message,
             "current": self._plan_index + 1 if self._plans else 0,
             "total": len(self._plans),
@@ -625,7 +626,8 @@ class AutomationController:
                         reservation = self.store.reserve_application_slot(
                             item["link"], self._search_city,
                             day=slot_day, daily_limit=self.daily_limit,
-                            city_limit=self._city_limit(), platform=self.platform_name)
+                            city_limit=self._city_limit(), platform=self.platform_name,
+                            company=effective_company, company_filter=company_filter)
                         if reservation == "duplicate":
                             remarks = "同一职位今日已沟通或待核实，跳过重复操作"
                         elif reservation == "daily_limit":
@@ -634,6 +636,8 @@ class AutomationController:
                             self._stop_event.set()
                         elif reservation == "city_limit":
                             remarks = f"{self._search_city or '当前地区'}的本轮名额已用完，转到下个地区"
+                        elif reservation == "company_limit":
+                            remarks = "10天内该公司已有投递或待核实记录，跳过重复操作"
                         else:
                             try:
                                 result = page.apply_job(item["link"])
@@ -842,14 +846,17 @@ class AutomationController:
         worker = self._worker
         if worker and worker.is_alive() and worker is not threading.current_thread():
             worker.join(timeout=2)
+        stopping = bool(worker and worker.is_alive())
         with self._lock:
-            self._worker = worker if worker and worker.is_alive() else None
-            self._task = None
-            self.status_message = "已停止"
-        return "已停止"
+            self._worker = worker if stopping else None
+            if not stopping:
+                self._task = None
+            self.status_message = "正在停止，请稍候" if stopping else "已停止"
+        return self.status_message
 
     def close(self) -> None:
-        self.stop()
+        if self.stop() != "已停止":
+            return  # The worker still owns the browser until it exits.
         with self._lock:
             page, self._page = self._page, None
         if page is not None:

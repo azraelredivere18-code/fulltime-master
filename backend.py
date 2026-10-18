@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping
 from xml.etree import ElementTree
 
+from application_filters import applied_company_reason, company_key
 from salary_codec import readable_salary
 
 
@@ -121,14 +122,41 @@ class LocalStore:
                 link TEXT NOT NULL,
                 platform TEXT NOT NULL DEFAULT 'BOSS直聘',
                 city TEXT NOT NULL,
+                company_key TEXT NOT NULL DEFAULT '',
                 state TEXT NOT NULL CHECK(state IN ('reserved','confirmed','unknown','released')),
                 created_at TEXT NOT NULL,
-                PRIMARY KEY(day, link)
+                PRIMARY KEY(day, platform, link)
             );
         """)
         columns = {row["name"] for row in self._db.execute("PRAGMA table_info(application_slot)")}
         if "platform" not in columns:
             self._db.execute("ALTER TABLE application_slot ADD COLUMN platform TEXT NOT NULL DEFAULT 'BOSS直聘'")
+        primary_key = tuple(row["name"] for row in sorted(
+            self._db.execute("PRAGMA table_info(application_slot)"), key=lambda row: row["pk"])
+            if row["pk"])
+        if primary_key != ("day", "platform", "link"):
+            # Preserve previous release data while allowing the same job URL to
+            # be counted independently for two recruitment-site accounts.
+            self._db.executescript("""
+                BEGIN IMMEDIATE;
+                CREATE TABLE application_slot_next (
+                    day TEXT NOT NULL,
+                    platform TEXT NOT NULL DEFAULT 'BOSS直聘',
+                    link TEXT NOT NULL,
+                    city TEXT NOT NULL,
+                    company_key TEXT NOT NULL DEFAULT '',
+                    state TEXT NOT NULL CHECK(state IN ('reserved','confirmed','unknown','released')),
+                    created_at TEXT NOT NULL,
+                    PRIMARY KEY(day, platform, link)
+                );
+                INSERT INTO application_slot_next(day,platform,link,city,state,created_at)
+                SELECT day,platform,link,city,state,created_at FROM application_slot;
+                DROP TABLE application_slot;
+                ALTER TABLE application_slot_next RENAME TO application_slot;
+                COMMIT;
+            """)
+        elif "company_key" not in columns:
+            self._db.execute("ALTER TABLE application_slot ADD COLUMN company_key TEXT NOT NULL DEFAULT ''")
         self._db.commit()
 
     def _sync_confirmed_slots(self) -> None:
@@ -144,10 +172,14 @@ class LocalStore:
             if not link or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", day):
                 continue
             self._db.execute(
-                "INSERT INTO application_slot(day,link,city,state,created_at) VALUES(?,?,?,?,?) "
-                "ON CONFLICT(day,link) DO UPDATE SET city=excluded.city "
-                "WHERE application_slot.city='' AND excluded.city!=''",
-                (day, link, str(item.get("search_city") or ""), "confirmed", stamp),
+                "INSERT INTO application_slot(day,link,city,state,created_at,company_key) "
+                "VALUES(?,?,?,?,?,?) "
+                "ON CONFLICT(day,platform,link) DO UPDATE SET "
+                "city=CASE WHEN application_slot.city='' THEN excluded.city ELSE application_slot.city END, "
+                "company_key=CASE WHEN application_slot.company_key='' THEN excluded.company_key "
+                "ELSE application_slot.company_key END",
+                (day, link, str(item.get("search_city") or ""), "confirmed", stamp,
+                 company_key(item.get("company"))),
             )
 
     @synchronized
@@ -166,7 +198,8 @@ class LocalStore:
     @synchronized
     def reserve_application_slot(self, link: str, city: str, *, day: str | None = None,
                                  daily_limit: int = 120, city_limit: int | None = None,
-                                 platform: str = "BOSS直聘") -> str:
+                                 platform: str = "BOSS直聘", company: str = "",
+                                 company_filter: str = "不过滤") -> str:
         """Reserve before clicking. An interrupted process leaves a counted slot."""
         day = day or china_day()
         self._db.execute("BEGIN IMMEDIATE")
@@ -178,6 +211,10 @@ class LocalStore:
             ).fetchone()
             if previous and previous["state"] != "released":
                 outcome = "duplicate"
+            elif company and company_filter in {
+                    "过滤10天内同一平台投递过的公司", "过滤10天内不同平台投递过的公司"} and self._company_slot_conflict(
+                        company, company_filter, platform, day):
+                outcome = "company_limit"
             elif self._db.execute(
                 "SELECT COUNT(*) FROM application_slot WHERE day=? AND platform=? AND state!='released'",
                 (day, platform)
@@ -191,10 +228,12 @@ class LocalStore:
                 outcome = "city_limit"
             else:
                 self._db.execute(
-                    "INSERT INTO application_slot(day,link,city,state,created_at,platform) VALUES(?,?,?,?,?,?) "
-                    "ON CONFLICT(day,link) DO UPDATE SET city=excluded.city, "
+                    "INSERT INTO application_slot(day,link,city,state,created_at,platform,company_key) "
+                    "VALUES(?,?,?,?,?,?,?) "
+                    "ON CONFLICT(day,platform,link) DO UPDATE SET city=excluded.city, "
                     "state='reserved',created_at=excluded.created_at",
-                    (day, link, city, "reserved", datetime.now(CHINA_TIME).isoformat(timespec="seconds"), platform),
+                    (day, link, city, "reserved", datetime.now(CHINA_TIME).isoformat(timespec="seconds"),
+                     platform, company_key(company)),
                 )
                 outcome = "reserved"
             self._db.commit()
@@ -202,6 +241,22 @@ class LocalStore:
         except Exception:
             self._db.rollback()
             raise
+
+    def _company_slot_conflict(self, company: str, mode: str,
+                               platform: str, day: str) -> bool:
+        first_day = (datetime.fromisoformat(day).date() - timedelta(days=9)).isoformat()
+        params: tuple[Any, ...] = (first_day, day, company_key(company))
+        same_platform = mode == "过滤10天内同一平台投递过的公司"
+        if same_platform:
+            params += (platform,)
+        query = ("SELECT 1 FROM application_slot WHERE day BETWEEN ? AND ? "
+                 "AND company_key=? AND state!='released'" +
+                 (" AND platform=?" if same_platform else "") + " LIMIT 1")
+        if self._db.execute(query, params).fetchone():
+            return True
+        rows = (json.loads(row["data"]) for row in self._db.execute(
+            "SELECT data FROM record WHERE kind='apply'"))
+        return applied_company_reason(company, rows, mode, platform, day) is not None
 
     @synchronized
     def finalize_application_slot(self, link: str, state: str, *, day: str | None = None,
