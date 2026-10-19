@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-from app import WindowManager
+from app import WindowAPI, WindowManager
 from embedded_browser import new_resume_receipt
 from onboarding import browser_guidance_script
 
@@ -15,6 +15,8 @@ class ResumeBrowser:
         self.url = url
         self.replies = list(replies)
         self.scripts = []
+        self.shown = 0
+        self.loaded_urls = []
         self.events = SimpleNamespace(closed=threading.Event())
 
     def get_current_url(self):
@@ -23,6 +25,13 @@ class ResumeBrowser:
     def run_js(self, script):
         self.scripts.append(script)
         return self.replies.pop(0)
+
+    def show(self):
+        self.shown += 1
+
+    def load_url(self, url):
+        self.loaded_urls.append(url)
+        self.url = url
 
 
 class OnboardingTests(unittest.TestCase):
@@ -38,6 +47,51 @@ class OnboardingTests(unittest.TestCase):
         self.assertIn("textContent", script)
         with self.assertRaises(ValueError):
             browser_guidance_script("测试", "submit")
+
+    def test_browser_guidance_only_focuses_when_newly_shown(self):
+        with tempfile.TemporaryDirectory() as folder:
+            manager = WindowManager(Path(folder))
+            api = WindowAPI(manager.db_path, manager, "index")
+            browser = ResumeBrowser("https://www.zhipin.com/web/geek/jobs",
+                                    ["shown", "already", "dismissed"])
+            manager._browser_windows["BOSS直聘"] = browser
+            try:
+                self.assertTrue(api.show_browser_guidance("BOSS直聘", "login"))
+                self.assertTrue(api.show_browser_guidance("BOSS直聘", "login"))
+                self.assertTrue(api.show_browser_guidance("BOSS直聘", "login"))
+                self.assertEqual(browser.shown, 1)
+            finally:
+                api.close()
+
+    def test_resume_confirmation_expires_after_logout_or_new_browser(self):
+        with tempfile.TemporaryDirectory() as folder:
+            manager = WindowManager(Path(folder))
+            api = WindowAPI(manager.db_path, manager, "index")
+            browser = ResumeBrowser("https://www.zhipin.com/web/geek/jobs",
+                                    ["logged_in", "logged_in", "logged_in"])
+            manager._browser_windows["BOSS直聘"] = browser
+            try:
+                self.assertEqual(api.get_login_status("BOSS直聘"), "logged_in")
+                self.assertEqual(api.acknowledge_platform_resume("BOSS直聘")["state"], "manual")
+                self.assertEqual(api.get_platform_resume_setup("BOSS直聘")["state"], "manual")
+                browser.url = "https://passport.zhipin.com/login"
+                self.assertEqual(api.get_login_status("BOSS直聘"), "logged_out")
+                self.assertEqual(api.get_platform_resume_setup("BOSS直聘")["state"], "unprepared")
+                browser.url = "https://www.zhipin.com/web/geek/jobs"
+                self.assertEqual(api.acknowledge_platform_resume("BOSS直聘")["state"], "manual")
+                manager._browser_windows["BOSS直聘"] = ResumeBrowser(browser.url, [])
+                self.assertEqual(api.get_platform_resume_setup("BOSS直聘")["state"], "unprepared")
+            finally:
+                api.close()
+
+    def test_reconnect_preserves_same_platform_login_page(self):
+        with tempfile.TemporaryDirectory() as folder:
+            manager = WindowManager(Path(folder))
+            browser = ResumeBrowser("https://passport.zhipin.com/login", [])
+            manager._browser_windows["BOSS直聘"] = browser
+            manager.open_browser_window("https://www.zhipin.com/web/geek/jobs", "BOSS直聘")
+            self.assertEqual(browser.loaded_urls, [])
+            self.assertEqual(browser.shown, 1)
 
     def test_resume_form_requires_site_page_and_fresh_preview(self):
         with tempfile.TemporaryDirectory() as folder:

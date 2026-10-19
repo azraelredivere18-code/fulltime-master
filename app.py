@@ -14,6 +14,7 @@ import os
 import re
 import sys
 import threading
+import uuid
 import webbrowser
 from pathlib import Path
 from datetime import datetime
@@ -22,7 +23,7 @@ from urllib.parse import urlsplit
 from backend import LocalStore, china_day
 
 
-VERSION = "0.15.0"
+VERSION = "0.15.1"
 WINDOWS = {
     "index": ("全职高手", "index.html", 660, 760),
     "setting": ("设置", "setting.html", 1120, 760),
@@ -101,14 +102,28 @@ class WindowAPI(LocalStore):
             return f"内置浏览器打开失败：{exc}"
 
     def get_login_status(self, platform: str = "BOSS直聘") -> str:
-        if self._manager.current_browser_window(platform) is None:
+        window = self._manager.current_browser_window(platform)
+        if window is None:
             return "browser_closed"
         from embedded_browser import EmbeddedBossPage
         try:
+            from site_adapters import SITES
+            current_host = urlsplit(str(window.get_current_url() or "")).hostname
+            hosts = ({"zhipin.com", "www.zhipin.com", "passport.zhipin.com"}
+                     if platform == "BOSS直聘" else SITES[platform].hosts)
+            if current_host not in hosts:
+                if self.get_apply_config(f"resume_setup.{platform}"):
+                    self.set_apply_config(f"resume_setup.{platform}", None)
+                return "unknown"
             if platform == "BOSS直聘":
-                return EmbeddedBossPage(self._manager).login_state()
-            from site_adapters import EmbeddedSitePage, SITES
-            return EmbeddedSitePage(self._manager, SITES[platform]).login_state()
+                state = ("logged_out" if current_host == "passport.zhipin.com" else
+                         EmbeddedBossPage(self._manager).login_state())
+            else:
+                from site_adapters import EmbeddedSitePage
+                state = EmbeddedSitePage(self._manager, SITES[platform]).login_state()
+            if state == "logged_out" and self.get_apply_config(f"resume_setup.{platform}"):
+                self.set_apply_config(f"resume_setup.{platform}", None)
+            return state
         except Exception:
             return "unknown"
 
@@ -167,6 +182,7 @@ class WindowAPI(LocalStore):
             if result.get("state") == "confirmed":
                 self.set_apply_config(f"resume_setup.{platform}", {
                     "source": "site_receipt", "at": datetime.now().isoformat(timespec="seconds"),
+                    "session": self._manager.current_resume_session(platform),
                 })
             return result
         except Exception as exc:
@@ -176,7 +192,12 @@ class WindowAPI(LocalStore):
         from site_adapters import SITES
         if platform != "BOSS直聘" and platform not in SITES:
             return {"state": "unsupported", "reason": "当前平台没有简历准备流程"}
+        session = self._manager.current_resume_session(platform)
+        if not session:
+            return {"state": "unprepared", "reason": "请先打开该平台浏览器，登录后准备网站简历"}
         value = self.get_apply_config(f"resume_setup.{platform}")
+        if not isinstance(value, dict) or value.get("session") != session:
+            return {"state": "unprepared", "reason": "当前浏览器登录尚未确认网站简历；请检查后重新确认"}
         source = value.get("source") if isinstance(value, dict) else ""
         if source == "site_receipt":
             return {"state": "site_receipt", "reason": "本机曾观察到网站显示附件上传成功；请检查网站简历是否仍有效"}
@@ -192,6 +213,7 @@ class WindowAPI(LocalStore):
             return {"state": "login", "reason": f"请先在{platform}内置浏览器手动登录或注册"}
         self.set_apply_config(f"resume_setup.{platform}", {
             "source": "manual", "at": datetime.now().isoformat(timespec="seconds"),
+            "session": self._manager.current_resume_session(platform),
         })
         return {"state": "manual", "reason": "已记录你的确认；网站简历内容仍需你自行检查"}
 
@@ -207,10 +229,10 @@ class WindowAPI(LocalStore):
         if urlsplit(str(window.get_current_url() or "")).hostname not in hosts:
             return False
         try:
-            shown = window.run_js(browser_guidance_script(platform, kind)) is True
-            if shown:
+            outcome = window.run_js(browser_guidance_script(platform, kind))
+            if outcome == "shown":
                 window.show()
-            return shown
+            return outcome in {"shown", "already", "dismissed"}
         except Exception:
             return False
 
@@ -458,6 +480,7 @@ class WindowManager:
         self._windows: dict[str, WindowAPI] = {}
         self._browser_window = None
         self._browser_windows: dict[str, object] = {}
+        self._browser_resume_sessions: dict[str, tuple[object, str]] = {}
         self._official_browser_window = None
         self._official_trusted_host = ""
         self._official_pending_url = ""
@@ -596,11 +619,26 @@ class WindowManager:
                 window = self._browser_window
             return window if window is not None and not window.events.closed.is_set() else None
 
+    def current_resume_session(self, platform: str) -> str | None:
+        """Tie resume confirmation to one embedded browser window, not a saved platform name."""
+        with self._lock:
+            window = self.current_browser_window(platform)
+            if window is None:
+                self._browser_resume_sessions.pop(platform, None)
+                return None
+            previous = self._browser_resume_sessions.get(platform)
+            if previous is not None and previous[0] is window:
+                return previous[1]
+            token = uuid.uuid4().hex
+            self._browser_resume_sessions[platform] = (window, token)
+            return token
+
     def _on_browser_closed(self, window) -> None:
         with self._lock:
             for platform, candidate in list(self._browser_windows.items()):
                 if candidate is window:
                     self._browser_windows.pop(platform, None)
+                    self._browser_resume_sessions.pop(platform, None)
                     self._platform_resume_previews.pop(platform, None)
             if self._browser_window is window:
                 self._browser_window = next(iter(self._browser_windows.values()), None)
@@ -625,8 +663,9 @@ class WindowManager:
                 if initial_url:
                     from urllib.parse import urlparse
                     current_host = urlparse(str(window.get_current_url() or "")).hostname
-                    requested_host = urlparse(initial_url).hostname
-                    if current_host != requested_host and not running_here:
+                    trusted_hosts = ({"zhipin.com", "www.zhipin.com", "passport.zhipin.com"}
+                                     if platform == "BOSS直聘" else SITES[platform].hosts)
+                    if current_host not in trusted_hosts and not running_here:
                         window.load_url(initial_url)
                 window.show()
                 self._browser_window = window

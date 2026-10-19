@@ -105,7 +105,7 @@ $(function () {
                     showResumeSetup(setup);
                     if (setup.state === 'unprepared') {
                         return pywebview.api.show_browser_guidance(selectedPlatform, 'resume').then(function (shown) {
-                            if (!shown) showTip('info', '请先准备网站简历', setup.reason + '。完成后点击“网站已有简历”，或在“创建或上传简历”中操作。');
+                            if (!shown) showTip('info', '请先准备网站简历', setup.reason + '。完成后点击“网站已有简历”，或打开简历助手操作。');
                             return false;
                         });
                     }
@@ -179,8 +179,7 @@ $(function () {
     });
 
     window.addEventListener('pywebviewready', function () {
-        var manualLoginNotified = {};
-        var resumeNotified = {};
+        var manualLoginFallback = {};
         function refreshRunStatus() {
             var platform = $('.selected-platform').val();
             pywebview.api.get_login_status(platform).then(function (state) {
@@ -189,18 +188,20 @@ $(function () {
                     verification:'请手动完成安全验证', browser_closed:'内置浏览器未打开', unknown:'待确认'};
                 $('#login-status').text('登录状态：' + (labels[state] || '待确认'));
                 $('.status-led').toggleClass('is-ready', state === 'logged_in');
-                if ((state === 'logged_out' || state === 'verification' || state === 'unknown') && !manualLoginNotified[platform]) {
+                if (state === 'logged_out' || state === 'verification' || state === 'unknown') {
                     pywebview.api.show_browser_guidance(platform,
                         state === 'logged_out' ? 'login' : state === 'verification' ? 'verification' : 'unknown')
                         .then(function (shown) {
-                            if (!shown) showTip('info', '需要人工介入', state === 'logged_out' ?
-                                '请在内置浏览器中手动登录' + platform + '。程序会等待登录完成。' :
-                                state === 'verification' ? '请在内置浏览器中手动完成安全验证。程序会等待验证完成。' :
-                                '当前页面尚未确认登录状态。请检查是否需要登录或注册，并准备网站简历。');
+                            if (!shown && manualLoginFallback[platform] !== state) {
+                                showTip('info', '需要人工介入', state === 'logged_out' ?
+                                    '请在内置浏览器中手动登录' + platform + '。程序会等待登录完成。' :
+                                    state === 'verification' ? '请在内置浏览器中手动完成安全验证。程序会等待验证完成。' :
+                                    '当前页面尚未确认登录状态。请检查是否需要登录或注册，并准备网站简历。');
+                            }
+                            manualLoginFallback[platform] = shown ? '' : state;
                         });
-                    manualLoginNotified[platform] = true;
                 }
-                if (state === 'logged_in') manualLoginNotified[platform] = false;
+                if (state === 'logged_in' || state === 'browser_closed') manualLoginFallback[platform] = '';
             });
             pywebview.api.get_platform_resume_setup(platform).then(function (setup) {
                 if ($('.selected-platform').val() !== platform) return;
@@ -211,11 +212,8 @@ $(function () {
                 var selected = $('.selected-platform').val();
                 var statuses = status.platforms || {};
                 var selectedStatus = statuses[selected];
-                if (selectedStatus && /简历|附件/.test(selectedStatus.message || '') && !resumeNotified[selected]) {
+                if (selectedStatus && /简历|附件/.test(selectedStatus.message || '')) {
                     pywebview.api.show_browser_guidance(selected, 'resume');
-                    resumeNotified[selected] = true;
-                } else if (!selectedStatus || !/简历|附件/.test(selectedStatus.message || '')) {
-                    resumeNotified[selected] = false;
                 }
                 if (selectedStatus && selectedStatus.running) setStartStyle();
                 else setStopStyle();

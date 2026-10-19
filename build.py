@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
-STAGE = ROOT / "stage-0.15"
+STAGE = ROOT / "stage-0.15.1"
 TEMPLATES = ROOT / "gui" / "templates"
 
 

@@ -362,6 +362,14 @@ class AutomationController:
         opened_at = time.monotonic()
         while not self._stop_event.is_set():
             try:
+                if self.mode == "apply_mode" and hasattr(self.store, "get_platform_resume_setup"):
+                    self.store.get_login_status(self.platform_name)
+                    if self.store.get_platform_resume_setup(self.platform_name)["state"] == "unprepared":
+                        self.status_message = (
+                            f"{self.platform_name}当前浏览器会话的简历需要重新确认；已暂停自动投递"
+                        )
+                        self._stop_event.set()
+                        break
                 if self._pending_application:
                     pending = self._pending_application
                     observed = (self._page.check_application_result(pending["link"])
@@ -382,7 +390,7 @@ class AutomationController:
                         self.status_message = (
                             "请在内置浏览器手动完成安全验证" if observed == "verification" else
                             f"请在内置浏览器手动登录{self.platform_name}" if observed == "login" else
-                            "平台今日沟通次数已达上限" if observed == "daily_limit" else
+                            f"平台今日{self.action_word}次数已达上限" if observed == "daily_limit" else
                             "投递结果待确认：请在内置浏览器检查当前职位，完成简历选择或确认弹窗后程序会核实回执"
                         )
                         if observed == "daily_limit":
@@ -620,9 +628,9 @@ class AutomationController:
                         remarks = "详情正则筛选职位不符合"
                 if not remarks and self.mode == "apply_mode":
                     if already_attempted or item["link"] in other_contacted:
-                        remarks = "同一职位已在其他任务中沟通或待核实，跳过重复操作"
+                        remarks = f"同一职位已在其他任务中{self.action_word}或待核实，跳过重复操作"
                     elif not hasattr(page, "apply_job"):
-                        remarks = "未接入当前浏览器的沟通操作"
+                        remarks = f"未接入当前浏览器的{self.action_word}操作"
                     else:
                         slot_day = china_day()
                         reservation = self.store.reserve_application_slot(
@@ -631,7 +639,7 @@ class AutomationController:
                             city_limit=self._city_limit(), platform=self.platform_name,
                             company=effective_company, company_filter=company_filter)
                         if reservation == "duplicate":
-                            remarks = "同一职位今日已沟通或待核实，跳过重复操作"
+                            remarks = f"同一职位今日已{self.action_word}或待核实，跳过重复操作"
                         elif reservation == "daily_limit":
                             remarks = f"本工具今日{self.platform_name}的{self.daily_limit}个名额已用完"
                             self.status_message = remarks
@@ -662,12 +670,12 @@ class AutomationController:
                                 self.applied_count += 1
                             elif state in {"logged_out", "login"}:
                                 remarks = "请手动登录后重试"
-                                self.status_message = "请在内置浏览器手动登录 BOSS直聘"
+                                self.status_message = f"请在内置浏览器手动登录{self.platform_name}"
                             elif state == "verification":
                                 remarks = "请手动完成安全验证后重试"
                                 self.status_message = "请在内置浏览器手动完成安全验证"
                             elif state == "daily_limit":
-                                remarks = "平台今日沟通次数已达上限"
+                                remarks = f"平台今日{self.action_word}次数已达上限"
                                 self.status_message = remarks
                                 self._stop_event.set()
                             elif state == "needs_confirmation":
@@ -677,7 +685,7 @@ class AutomationController:
                                 remarks = "平台提示先完善或选择简历；未记录为成功"
                                 pending_confirmation = True
                             else:
-                                remarks = (reason or "沟通状态未确认") + "；未记录为成功"
+                                remarks = (reason or f"{self.action_word}状态未确认") + "；未记录为成功"
                                 pending_confirmation = state == "unknown" and clicked
                 if not remarks:
                     remarks = "仅筛选保存；未自动投递"
@@ -736,7 +744,7 @@ class AutomationController:
             return {"state": "invalid", "reason": f"未找到{self.platform_name}投递记录"}
         row = rows[0]
         if row.get("attempt_state") != "pending":
-            return {"state": "invalid", "reason": "该记录没有待核实的沟通操作"}
+            return {"state": "invalid", "reason": f"该记录没有待核实的{self.action_word}操作"}
         if self._page is None:
             self._page = self._page_factory()
         if not hasattr(self._page, "login_state") or self._page.login_state() != "logged_in":
@@ -749,7 +757,7 @@ class AutomationController:
         state = (self._page.check_application_result(link)
                  if hasattr(self._page, "check_application_result") else "unknown")
         if state != "sent":
-            return {"state": state, "reason": "页面仍未显示已沟通；保留待核实状态和今日名额"}
+            return {"state": state, "reason": f"页面仍未显示已{self.action_word}；保留待核实状态和今日名额"}
         day = str(row.get("application_day") or china_day())
         self.store.finalize_application_slot(link, "confirmed", day=day,
                                              platform=self.platform_name)

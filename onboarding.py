@@ -32,8 +32,10 @@ def browser_guidance_script(platform: str, kind: str) -> str:
     return """(() => {
       const id='fulltime-master-guidance';
       const kind=KIND;
+      const dismissedKey='__fulltime_master_guidance_dismissed';
+      if(window[dismissedKey]&&window[dismissedKey][kind])return 'dismissed';
       const prior=document.getElementById(id);
-      if(prior && prior.dataset.kind===kind)return true;
+      if(prior && prior.dataset.kind===kind)return 'already';
       if(prior)prior.remove();
       const box=document.createElement('aside');
       box.id=id;box.dataset.kind=kind;box.setAttribute('role','alertdialog');
@@ -45,11 +47,15 @@ def browser_guidance_script(platform: str, kind: str) -> str:
       const close=document.createElement('button');close.type='button';close.textContent='关闭';
       close.setAttribute('aria-label','关闭提醒');
       close.style.cssText='padding:4px 9px;background:#20364b;color:#fff;border:1px solid #5d7e91;border-radius:5px;cursor:pointer;flex:none';
-      close.addEventListener('click',()=>box.remove());top.appendChild(close);box.appendChild(top);
+      close.addEventListener('click',()=>{
+        window[dismissedKey]=window[dismissedKey]||{};
+        window[dismissedKey][kind]=true;
+        box.remove();
+      });top.appendChild(close);box.appendChild(top);
       const body=document.createElement('p');body.textContent=MESSAGE;
       body.style.cssText='margin:10px 0 0;white-space:normal';box.appendChild(body);
       (document.body||document.documentElement).appendChild(box);
-      return true;
+      return 'shown';
     })()""".replace("KIND", json.dumps(kind)).replace(
         "TITLE", json.dumps(title, ensure_ascii=True)).replace(
         "PLATFORM", json.dumps(platform, ensure_ascii=True)).replace(
