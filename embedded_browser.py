@@ -131,6 +131,8 @@ CHAT_RESULT_SCRIPT = r"""(() => {
     if (buttons.some(el => /已沟通|继续沟通/.test((el.innerText || el.textContent || '').trim())))
         return 'sent';
     if (Array.from(document.querySelectorAll('.boss-dialog, .dialog-wrap, .modal')).filter(visible)
+        .some(el => /未上传简历|未上传附件简历|请完善简历/.test(el.innerText || ''))) return 'needs_resume';
+    if (Array.from(document.querySelectorAll('.boss-dialog, .dialog-wrap, .modal')).filter(visible)
         .some(el => /确认|发送|招呼/.test(el.innerText || ''))) return 'needs_confirmation';
     return 'unknown';
 })()"""
@@ -166,6 +168,24 @@ def build_resume_upload_script(file: Path) -> str:
         return {state:'submitted_to_form'};
     })()""".replace("MIME", json.dumps(mime)).replace(
         "NAME", json.dumps(file.name, ensure_ascii=False)).replace("PAYLOAD", json.dumps(payload))
+
+
+RESUME_RECEIPT_SCRIPT = r"""(() => {
+  const visible=e=>!!(e&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden');
+  return Array.from(document.querySelectorAll('span,div,p,strong,li,[role=status],[role=alert]'))
+    .filter(e=>visible(e)&&e.children.length===0)
+    .map(e=>(e.innerText||e.textContent||'').trim())
+    .filter(t=>/^(?:上传成功|简历上传成功|附件简历已上传|已上传附件简历|上传完成)[！!。]?$/.test(t))
+    .slice(0,20);
+})()"""
+
+
+def new_resume_receipt(before: object, after: object) -> bool:
+    """An old success message on the page cannot confirm a new upload."""
+    if not isinstance(before, list) or not isinstance(after, list):
+        return False
+    return any(isinstance(item, str) and after.count(item) > before.count(item)
+               for item in after)
 
 
 def _boss_url(url: str, *, detail: bool = False) -> bool:
@@ -284,8 +304,8 @@ class EmbeddedBossPage:
                 return {"state": "unavailable", "reason": "未找到唯一的“立即沟通”按钮", "clicked": False}
             for _ in range(12):
                 observed = self._current_window().run_js(CHAT_RESULT_SCRIPT)
-                if observed in {"sent", "verification", "login", "daily_limit", "needs_confirmation"}:
-                    restore_search = observed not in {"verification", "login", "needs_confirmation"}
+                if observed in {"sent", "verification", "login", "daily_limit", "needs_confirmation", "needs_resume"}:
+                    restore_search = observed not in {"verification", "login", "needs_confirmation", "needs_resume"}
                     return {"state": str(observed), "reason": "页面可见状态：" + str(observed), "clicked": True}
                 time.sleep(0.5)
             restore_search = False
@@ -308,14 +328,14 @@ class EmbeddedBossPage:
             return {"state": "login", "reason": "请先在内置浏览器手动登录"}
         if "resume" not in urlparse(self.url).path.lower():
             return {"state": "wrong_page", "reason": "请先在内置浏览器打开 BOSS 的附件简历管理页"}
+        before = self._current_window().run_js(RESUME_RECEIPT_SCRIPT)
         outcome = self._current_window().run_js(build_resume_upload_script(file))
         if not isinstance(outcome, dict) or outcome.get("state") != "submitted_to_form":
             return {"state": "unavailable", "reason": "未找到唯一的简历文件输入框"}
         for _ in range(12):
-            visible = self._current_window().run_js(
-                "(() => /上传成功|简历上传成功|已上传附件简历/.test(document.body.innerText || ''))()")
-            if visible is True:
-                return {"state": "confirmed", "reason": "页面显示简历上传成功"}
+            after = self._current_window().run_js(RESUME_RECEIPT_SCRIPT)
+            if new_resume_receipt(before, after):
+                return {"state": "confirmed", "reason": "网页新增了简历上传成功提示"}
             time.sleep(0.5)
         return {"state": "unverified", "reason": "文件已交给页面，但未看到上传成功提示，请在 BOSS 页面确认"}
 

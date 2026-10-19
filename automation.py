@@ -408,6 +408,8 @@ class AutomationController:
                     verb = f"筛选并{self.action_word}" if self.mode == "apply_mode" else "筛选"
                     self.status_message = f"正在{verb} {self._plan_index + 1}/{len(self._plans)} 组搜索"
                     self.saved_count += self.scan_once()
+                    if self._stop_event.is_set():
+                        break
                     used = self.store.daily_application_usage(platform=self.platform_name)["total"] if self.mode == "apply_mode" else 0
                     if self.mode == "apply_mode" and used >= self.daily_limit:
                         self.status_message = f"本工具今日 {self.daily_limit} 个{self.platform_name}名额已用完"
@@ -710,9 +712,16 @@ class AutomationController:
                 record_id = self.store.add_apply_record(record)
                 known[item["link"]] = {"id": record_id, **record}
                 saved += 1
-            if pending_confirmation:
+            if pending_confirmation and state != "needs_resume":
                 self._pending_application = {"link": item["link"], "record_id": record_id,
                                              "day": slot_day}
+            if attempted_contact and state == "needs_resume":
+                self.store.set_apply_config(f"resume_setup.{self.platform_name}", None)
+                self.status_message = (
+                    f"{self.platform_name}要求先完善网站简历；已暂停自动投递。"
+                    "请到网站简历页创建或上传，随后在记录页核实本条结果；程序不会重复点击该职位"
+                )
+                self._stop_event.set()
             if exclude_sales:
                 self._sales_rechecked.add((task_id, item["link"]))
             self._policy_rechecked.add((task_id, item["link"]))

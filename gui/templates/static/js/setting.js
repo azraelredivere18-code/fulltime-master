@@ -595,6 +595,51 @@ $(function () {
         }).finally(function () { button.prop('disabled', false); });
     });
 
+    $('#resume-platform').change(function () {
+        $('#fill-platform-resume').prop('disabled', true);
+        $('#platform-resume-fill-status').text('平台已切换，请重新识别网站的在线简历编辑页。');
+    });
+
+    $('#open-profile-vault').click(function () {
+        pywebview.api.open_official_window().catch(function (error) {
+            showTip('error', '资料库', String(error));
+        });
+    });
+
+    $('#inspect-platform-resume').click(function () {
+        var platform = $('#resume-platform').val();
+        $('#fill-platform-resume').prop('disabled', true);
+        $('#platform-resume-fill-status').text('正在识别空白字段…');
+        pywebview.api.inspect_platform_resume_form(platform).then(function (result) {
+            if (result.state === 'ok') {
+                var targets = Array.isArray(result.targets) ? result.targets : [];
+                $('#fill-platform-resume').prop('disabled', targets.length === 0);
+                $('#platform-resume-fill-status').text(targets.length ?
+                    '找到 ' + targets.length + ' 个空白字段：' + targets.map(function (item) { return item.label || item.field; }).join('、') + '。请核对当前网站，确认后再填写。' :
+                    '当前页没有唯一匹配的空白资料字段；请手动填写或打开网站的在线简历编辑页。');
+            } else {
+                $('#platform-resume-fill-status').text(result.reason || '识别失败，请检查当前网页。');
+            }
+        }).catch(function (error) {
+            $('#platform-resume-fill-status').text(String(error));
+        });
+    });
+
+    $('#fill-platform-resume').click(function () {
+        var platform = $('#resume-platform').val();
+        var button = $(this).prop('disabled', true);
+        pywebview.api.fill_platform_resume_form(platform).then(function (result) {
+            if (result.state === 'ok') {
+                $('#platform-resume-fill-status').text('已填写 ' + (result.filled || []).length +
+                    ' 个空白字段。请回到网站逐项检查，并由你手动保存网站简历。');
+            } else {
+                $('#platform-resume-fill-status').text(result.reason || '网页已变化，请重新识别后再填写。');
+            }
+        }).catch(function (error) {
+            $('#platform-resume-fill-status').text(String(error));
+        }).finally(function () { button.prop('disabled', true); });
+    });
+
     $('#pages').on('input', function () {
         pywebview.api.set_apply_config('max_page', parseInt($(this).val()))
     });

@@ -212,7 +212,6 @@ span[class^=icon] {
 }
 
 .main-window {
-    background-image: url("../images/index-bg.png");
     background-color: #f0f0f0; /* 备用颜色 */
     background-size: cover; /* 全覆盖模式 */
     background-position: center;

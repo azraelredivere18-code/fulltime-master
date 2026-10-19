@@ -13,7 +13,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote, urlparse
 
-from embedded_browser import EmbeddedTextElement, build_resume_upload_script
+from embedded_browser import (EmbeddedTextElement, RESUME_RECEIPT_SCRIPT,
+                              build_resume_upload_script, new_resume_receipt)
 
 
 @dataclass(frozen=True)
@@ -662,14 +663,14 @@ class EmbeddedSitePage:
             return {"state": "login", "reason": f"请先在内置浏览器手动登录{self.site.name}"}
         if not any(word in urlparse(self.url).path.lower() for word in ("resume", "profile", "my")):
             return {"state": "wrong_page", "reason": f"请先在{self.site.name}打开个人简历或附件简历管理页"}
+        before = self._window().run_js(RESUME_RECEIPT_SCRIPT)
         outcome = self._window().run_js(build_resume_upload_script(file))
         if not isinstance(outcome, dict) or outcome.get("state") != "submitted_to_form":
             return {"state": "unavailable", "reason": "未找到唯一的简历文件输入框；请在网站上手动上传"}
         for _ in range(12):
-            visible = self._window().run_js(
-                "(() => /上传成功|简历上传成功|附件简历已上传/.test(document.body.innerText || ''))()")
-            if visible is True:
-                return {"state": "confirmed", "reason": "网站显示简历上传成功"}
+            after = self._window().run_js(RESUME_RECEIPT_SCRIPT)
+            if new_resume_receipt(before, after):
+                return {"state": "confirmed", "reason": "网页新增了简历上传成功提示"}
             time.sleep(0.5)
         return {"state": "unverified", "reason": "文件已交给网页，但未看到上传成功提示；请在网站核实"}
 

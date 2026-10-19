@@ -56,6 +56,8 @@ class RunModeTests(unittest.TestCase):
             manager.controllers = {name: ActiveController(name) for name in windows}
             api.get_login_status = lambda platform: "logged_in"
             try:
+                for name in windows:
+                    self.assertEqual(api.acknowledge_platform_resume(name)["state"], "manual")
                 self.assertIs(manager.current_browser_window("智联招聘"), windows["智联招聘"])
                 self.assertEqual(api.start("BOSS直聘", "apply_mode"), "已运行")
                 self.assertEqual(api.start("智联招聘", "apply_mode"), "已运行")
@@ -82,6 +84,9 @@ class RunModeTests(unittest.TestCase):
                 self.assertIn("仅支持自动投递", api.start("BOSS直聘", "filter_mode"))
                 manager._browser_window = SimpleNamespace(events=SimpleNamespace(closed=threading.Event()))
                 api.get_login_status = lambda platform: "logged_in"
+                self.assertIn("网站简历", api.start("BOSS直聘", "apply_mode"))
+                self.assertEqual(manager.controller.started, 0)
+                self.assertEqual(api.acknowledge_platform_resume("BOSS直聘")["state"], "manual")
                 self.assertEqual(api.start("BOSS直聘", "apply_mode"), "已运行")
                 self.assertEqual(manager.controller.started, 1)
             finally:

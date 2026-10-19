@@ -8,8 +8,10 @@ file; there is no activation or remote licensing endpoint.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import re
 import sys
 import threading
 import webbrowser
@@ -20,7 +22,7 @@ from urllib.parse import urlsplit
 from backend import LocalStore, china_day
 
 
-VERSION = "0.14.0"
+VERSION = "0.15.0"
 WINDOWS = {
     "index": ("全职高手", "index.html", 660, 760),
     "setting": ("设置", "setting.html", 1120, 760),
@@ -161,12 +163,89 @@ class WindowAPI(LocalStore):
             else:
                 from site_adapters import EmbeddedSitePage, SITES
                 page = EmbeddedSitePage(self._manager, SITES[platform])
-            return page.upload_resume_file(str(path))
+            result = page.upload_resume_file(str(path))
+            if result.get("state") == "confirmed":
+                self.set_apply_config(f"resume_setup.{platform}", {
+                    "source": "site_receipt", "at": datetime.now().isoformat(timespec="seconds"),
+                })
+            return result
         except Exception as exc:
             return {"state": "error", "reason": f"简历上传未完成：{exc}"}
 
+    def get_platform_resume_setup(self, platform: str) -> dict[str, str]:
+        from site_adapters import SITES
+        if platform != "BOSS直聘" and platform not in SITES:
+            return {"state": "unsupported", "reason": "当前平台没有简历准备流程"}
+        value = self.get_apply_config(f"resume_setup.{platform}")
+        source = value.get("source") if isinstance(value, dict) else ""
+        if source == "site_receipt":
+            return {"state": "site_receipt", "reason": "本机曾观察到网站显示附件上传成功；请检查网站简历是否仍有效"}
+        if source == "manual":
+            return {"state": "manual", "reason": "你已确认在网站准备简历；请以网站当前状态为准"}
+        return {"state": "unprepared", "reason": "尚未确认网站简历。新用户请先注册、登录并创建在线简历或上传附件"}
+
+    def acknowledge_platform_resume(self, platform: str) -> dict[str, str]:
+        from site_adapters import SITES
+        if platform != "BOSS直聘" and platform not in SITES:
+            return {"state": "unsupported", "reason": "当前平台不受支持"}
+        if self.get_login_status(platform) != "logged_in":
+            return {"state": "login", "reason": f"请先在{platform}内置浏览器手动登录或注册"}
+        self.set_apply_config(f"resume_setup.{platform}", {
+            "source": "manual", "at": datetime.now().isoformat(timespec="seconds"),
+        })
+        return {"state": "manual", "reason": "已记录你的确认；网站简历内容仍需你自行检查"}
+
+    def show_browser_guidance(self, platform: str, kind: str) -> bool:
+        from onboarding import browser_guidance_script
+        from site_adapters import SITES
+        if platform != "BOSS直聘" and platform not in SITES:
+            return False
+        window = self._manager.current_browser_window(platform)
+        if window is None:
+            return False
+        hosts = {"zhipin.com", "www.zhipin.com", "passport.zhipin.com"} if platform == "BOSS直聘" else SITES[platform].hosts
+        if urlsplit(str(window.get_current_url() or "")).hostname not in hosts:
+            return False
+        try:
+            shown = window.run_js(browser_guidance_script(platform, kind)) is True
+            if shown:
+                window.show()
+            return shown
+        except Exception:
+            return False
+
+    def inspect_platform_resume_form(self, platform: str) -> dict:
+        return self._platform_resume_form_action(platform, fill=False)
+
+    def fill_platform_resume_form(self, platform: str) -> dict:
+        return self._platform_resume_form_action(platform, fill=True)
+
+    def _platform_resume_form_action(self, platform: str, *, fill: bool) -> dict:
+        try:
+            if self.get_login_status(platform) != "logged_in":
+                return {"state": "login", "reason": "请先在该网站手动登录或注册"}
+            profile = self.get_official_profile()
+            profile.pop("id_number", None)
+            if not any(profile.values()):
+                return {"state": "empty_profile", "reason": "请先在资料库填写并加密保存常用资料"}
+            return self._manager.platform_resume_form_action(platform, profile, fill=fill)
+        except Exception as exc:
+            return {"state": "error", "reason": f"网站简历表单处理失败：{exc}"}
+
     def open_setting_window(self) -> bool:
         self._manager.open_window("setting")
+        return True
+
+    def open_resume_setup(self, platform: str = "BOSS直聘") -> bool:
+        window = self._manager.open_window("setting")
+        if window.events.loaded.wait(8):
+            window.run_js("""(() => {
+              const tab=document.querySelector('a[href="#apply-setting"]');
+              if(tab)tab.click();
+              const select=document.getElementById('resume-platform');
+              if(select)select.value=PLATFORM;
+              return true;
+            })()""".replace("PLATFORM", json.dumps(platform, ensure_ascii=True)))
         return True
 
     def open_record_window(self) -> bool:
@@ -383,6 +462,7 @@ class WindowManager:
         self._official_trusted_host = ""
         self._official_pending_url = ""
         self._official_preview: dict | None = None
+        self._platform_resume_previews: dict[str, dict] = {}
         self._detail_windows: set = set()
         self.controller = None
         self.controllers: dict[str, object] = {}
@@ -521,6 +601,7 @@ class WindowManager:
             for platform, candidate in list(self._browser_windows.items()):
                 if candidate is window:
                     self._browser_windows.pop(platform, None)
+                    self._platform_resume_previews.pop(platform, None)
             if self._browser_window is window:
                 self._browser_window = next(iter(self._browser_windows.values()), None)
 
@@ -562,6 +643,53 @@ class WindowManager:
             self.close_browser_window(platform)
             raise RuntimeError("内置浏览器未能加载")
         return window
+
+    def platform_resume_form_action(self, platform: str, profile: dict[str, str], *, fill: bool) -> dict:
+        """Preview and fill only a visible resume/profile page; never submit it."""
+        from official_apply import build_form_script
+        from site_adapters import SITES
+
+        if platform != "BOSS直聘" and platform not in SITES:
+            return {"state": "unsupported", "reason": "当前平台不受支持"}
+        profile = {key: value for key, value in profile.items() if key != "id_number"}
+        with self._lock:
+            window = self.current_browser_window(platform)
+            if window is None:
+                return {"state": "browser_closed", "reason": "请先打开该平台的内置浏览器"}
+            url = str(window.get_current_url() or "")
+            parsed = urlsplit(url)
+            hosts = {"zhipin.com", "www.zhipin.com"} if platform == "BOSS直聘" else SITES[platform].hosts
+            route = (parsed.path + "/" + parsed.fragment.split("?", 1)[0]).lower()
+            if (parsed.scheme != "https" or parsed.hostname not in hosts or
+                    not re.search(r"(?:^|/)(?:resume|profile|curriculum|cv)(?:/|$)", route)):
+                self._platform_resume_previews.pop(platform, None)
+                return {"state": "wrong_page", "reason": "请先在该网站打开个人简历或在线简历编辑页"}
+            digest = hashlib.sha256(json.dumps(profile, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
+            preview_script = build_form_script(profile, parsed.hostname, fill=False)
+            if not fill:
+                result = window.run_js(preview_script)
+                self._platform_resume_previews.pop(platform, None)
+                if isinstance(result, dict) and result.get("state") == "ok":
+                    self._platform_resume_previews[platform] = {
+                        "window": window, "url": url, "fingerprint": result.get("fingerprint"),
+                        "available": result.get("available"), "digest": digest,
+                    }
+                return result if isinstance(result, dict) else {"state": "error", "reason": "网页未返回可识别字段"}
+            preview = self._platform_resume_previews.pop(platform, None)
+            stale = {"state": "stale_preview", "reason": "网页或本机资料已变化，请重新识别后再填写"}
+            if (not preview or preview["window"] is not window or preview["url"] != url or
+                    preview["digest"] != digest):
+                return stale
+            check = window.run_js(preview_script)
+            if (not isinstance(check, dict) or check.get("state") != "ok" or
+                    check.get("fingerprint") != preview["fingerprint"] or
+                    check.get("available") != preview["available"]):
+                return stale
+            selected = {key: value for key, value in profile.items() if key in preview["available"]}
+            result = window.run_js(build_form_script(
+                selected, parsed.hostname, fill=True,
+                expected_fingerprint=preview["fingerprint"]))
+            return result if isinstance(result, dict) else {"state": "error", "reason": "网页未返回填写结果"}
 
     def _on_official_browser_closed(self, window) -> None:
         with self._lock:
@@ -758,6 +886,9 @@ class WindowManager:
             state = self._windows["index"].get_login_status(platform)
             if state != "logged_in":
                 return f"请先在{platform}内置浏览器手动完成登录或安全验证"
+            setup = self._windows["index"].get_platform_resume_setup(platform)
+            if setup["state"] == "unprepared":
+                return f"请先在{platform}准备网站简历，或确认已有在线简历，再开始自动投递"
             self._windows["index"].set_apply_config("work_mode", "apply_mode")
             try:
                 return self.ensure_controller(platform).start(platform)

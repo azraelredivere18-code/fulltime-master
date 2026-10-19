@@ -382,6 +382,28 @@ class AutomationTests(unittest.TestCase):
         self.assertEqual(self.store.daily_application_usage()["total"], 1)
         controller.close()
 
+    def test_missing_site_resume_pauses_without_reclicking(self):
+        page = FakePage([FakeCard("Python 开发", "甲公司", "/job_detail/resume.html")])
+        calls = []
+        page.apply_job = lambda link: calls.append(link) or {"state": "needs_resume", "clicked": True}
+        self.store.set_apply_config("work_mode", "apply_mode")
+        self.store.set_apply_config("resume_setup.BOSS直聘", {"state": "manual"})
+        controller = AutomationController(
+            self.store, config_dir=self.root / "config", page_factory=lambda: page,
+            poll_seconds=0.01, dwell_seconds=10,
+        )
+        self.assertEqual(controller.start("BOSS直聘"), "已运行")
+        deadline = time.monotonic() + 1
+        while controller.get_run_status()["running"] and time.monotonic() < deadline:
+            time.sleep(0.01)
+        row = self.store.get_apply_record()[0]
+        self.assertEqual((row["submit"], row["attempt_state"]), ("否", "pending"))
+        self.assertIn("简历", controller.get_run_status()["message"])
+        self.assertEqual(self.store.daily_application_usage()["total"], 1)
+        self.assertEqual(len(calls), 1)
+        self.assertIsNone(self.store.get_apply_config("resume_setup.BOSS直聘"))
+        controller.close()
+
     def test_restart_can_reconcile_pending_record_without_reapplying(self):
         link = "https://www.zhipin.com/job_detail/restart.html"
         day = "2026-10-17"

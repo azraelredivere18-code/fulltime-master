@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
-STAGE = ROOT / "stage-0.14"
+STAGE = ROOT / "stage-0.15"
 TEMPLATES = ROOT / "gui" / "templates"
 
 
@@ -51,6 +51,7 @@ def main() -> int:
         "--hidden-import", "embedded_browser",
         "--hidden-import", "site_adapters",
         "--hidden-import", "site_automation",
+        "--hidden-import", "onboarding",
         "--hidden-import", "employment_type",
         "--hidden-import", "recruitment_track",
         "--hidden-import", "official_apply",

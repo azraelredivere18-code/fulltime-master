@@ -224,6 +224,11 @@ body, .main-window, .setting-window, .record-window { color:var(--ink); backgrou
 }
 .main-window .status-line #login-status { overflow-wrap:anywhere; }
 .main-window .connection-note, .main-window .mode-hint { color:#adc4d6; font-size:12px; line-height:1.55; }
+.main-window .resume-panel { border-color:#52725c; background:linear-gradient(130deg,rgba(29,49,48,.98),rgba(17,31,44,.98)); }
+.main-window .resume-status { margin:2px 0 9px; color:#d9eee4; font-size:12px; line-height:1.55; overflow-wrap:anywhere; }
+.main-window .resume-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.main-window .resume-actions .btn { flex:1 1 150px; min-height:34px; padding:5px 10px; font-size:12px; }
+.main-window .resume-panel.is-ready .resume-status { color:#bdf9c4; }
 .main-window .mission-panel {
   background:linear-gradient(130deg,rgba(21,62,70,.96),rgba(20,32,51,.98) 70%);
   border-color:#3b7980;

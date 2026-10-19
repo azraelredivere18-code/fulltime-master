@@ -41,21 +41,29 @@
         <p class="status-line"><span class="status-led" aria-hidden="true"></span><span id="login-status">登录状态：尚未检查</span></p>
         <p class="connection-note">登录和安全验证需手动完成；最多同时投递两个平台。</p>
     </section>
+    <section class="app-panel resume-panel" aria-labelledby="resume-heading">
+        <div class="section-heading"><h2 id="resume-heading"><span class="section-index">02</span> 网站简历</h2><span class="panel-kicker">RESUME READY</span></div>
+        <p class="resume-status" id="resume-status" role="status">先登录或注册，再检查网站是否已有可投递的简历。</p>
+        <div class="resume-actions">
+            <button type="button" class="btn btn-outline-primary" id="open-resume-setup">创建或上传简历</button>
+            <button type="button" class="btn btn-outline-primary" id="confirm-resume-ready">网站已有简历</button>
+        </div>
+    </section>
     <section class="app-panel mission-panel">
-        <div class="section-heading"><h2><span class="section-index">02</span> 自动投递</h2><span class="panel-kicker">MISSION CONTROL</span></div>
+        <div class="section-heading"><h2><span class="section-index">03</span> 自动投递</h2><span class="panel-kicker">MISSION CONTROL</span></div>
         <div class="mission-copy"><span class="mission-icon" aria-hidden="true">↗</span><div><strong>准备执行投递任务</strong><small>搜索职位并核验结果，仅确认成功后计数。</small></div></div>
         <p class="mode-hint" id="mode-hint">平台可单独启停；BOSS 直聘执行发起沟通。</p>
         <button type="button" class="btn btn-primary w-100 main-action" id="start-apply">开始自动投递 <span aria-hidden="true">→</span></button>
     </section>
     <section class="app-panel run-panel">
-        <div class="section-heading"><h2><span class="section-index">03</span> 行动实况</h2><span class="panel-kicker">LIVE FEED</span></div>
+        <div class="section-heading"><h2><span class="section-index">04</span> 行动实况</h2><span class="panel-kicker">LIVE FEED</span></div>
         <p class="task-show d-none">当前目标 / <b class="task-keyword">？</b> · <b class="task-city">？</b></p>
         <p class="status-show"><span class="task-msg">尚未开始</span></p>
     </section>
     <nav class="app-actions" aria-label="工作台操作">
         <button type="button" class="btn btn-outline-primary" onclick="window.pywebview.api.open_record_window()">查看记录</button>
         <button type="button" class="btn btn-outline-primary" onclick="window.pywebview.api.open_setting_window()">任务与设置</button>
-        <button type="button" class="btn btn-outline-primary" onclick="window.pywebview.api.open_official_window()">企业官网投递</button>
+        <button type="button" class="btn btn-outline-primary" onclick="window.pywebview.api.open_official_window()">资料库 / 企业官网</button>
         <button type="button" class="btn btn-link" id="export-page-diagnostics">页面诊断</button>
     </nav>
 </main>
