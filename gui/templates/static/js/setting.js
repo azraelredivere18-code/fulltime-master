@@ -35,7 +35,7 @@ function openTab() {
 $(document).ready(openTab);
 $(window).on('hashchange', openTab);
 
-PLATFORMS = ['BOSS直聘', '智联招聘', '前程无忧', '应届生', '猎聘', '拉勾', '牛客网']
+PLATFORMS = ['BOSS直聘', '智联招聘', '前程无忧', '应届生', '猎聘', '拉勾', '牛客网', '国聘网']
 
 function getTaskForm() {
     var data = {

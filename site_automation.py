@@ -45,12 +45,26 @@ class SiteAutomationController(AutomationController):
         self.platform_name = site.name
         self.filter_group = {"智联招聘": "zhilian.filter", "前程无忧": "qiancheng.filter",
                              "应届生": "yjs.filter", "猎聘": "liepin.filter",
-                             "拉勾": "lagou.filter", "牛客网": "niuke.filter"}[site.name]
+                             "拉勾": "lagou.filter", "牛客网": "niuke.filter",
+                             "国聘网": "guopin.filter"}[site.name]
         self.card_locator = "css:" + site.cards
         self.detail_locator = "css:" + site.detail
-        self.card_parser = lambda card: parse_site_card(card, site)
+        self.card_parser = self._parse_site_card
         self.link_validator = lambda link: link if valid_site_url(site, link, detail=True) else ""
         super().__init__(store, page_factory=page_factory, **kwargs)
+
+    def _parse_site_card(self, card: Any) -> dict[str, str] | None:
+        parsed = parse_site_card(card, self.site)
+        if parsed and self.site.name == "国聘网" and not parsed["company"]:
+            # Company cannot be used in the cross-platform duplicate guard
+            # unless it is known before a submission attempt.
+            return None
+        if parsed and self.site.name in {"国聘网", "牛客网"} and self._search_city:
+            # Guopin's keyword route and Niuke's search box have no verified
+            # single-city query.  Never apply their cross-city result.
+            if self._search_city not in parsed["area"]:
+                return None
+        return parsed
 
     def _validate_filters(self, active_filters: Any) -> None:
         if not isinstance(active_filters, dict):
@@ -66,8 +80,8 @@ class SiteAutomationController(AutomationController):
     def _city_code(self, city: str) -> str:
         group = {"智联招聘": "zhilian", "前程无忧": "qiancheng",
                  "应届生": "yjs", "猎聘": "liepin", "拉勾": "lagou",
-                 "牛客网": "niuke"}[self.site.name]
-        if group in {"lagou", "niuke"}:
+                 "牛客网": "niuke", "国聘网": "guopin"}[self.site.name]
+        if group in {"lagou", "niuke", "guopin"}:
             return city
         file = self.config_dir / group / "code.json"
         codes = json.loads(file.read_text(encoding="utf-8"))
@@ -110,6 +124,7 @@ class SiteAutomationController(AutomationController):
             return f"请在内置浏览器手动登录{self.site.name}，完成后会继续搜索"
         if self.mode == "apply_mode" and state != "logged_in":
             return f"尚未确认{self.site.name}登录状态；请手动登录后重试"
-        if not parsed.path.startswith(self.site.search_path):
+        search_paths = ("/sou/", "/jobs/") if self.site.name == "智联招聘" else (self.site.search_path,)
+        if not parsed.path.startswith(search_paths):
             return f"浏览器未在{self.site.name}搜索页，请返回搜索页"
         return ""

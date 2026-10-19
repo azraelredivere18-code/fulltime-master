@@ -20,7 +20,7 @@ from urllib.parse import urlsplit
 from backend import LocalStore, china_day
 
 
-VERSION = "0.13.0"
+VERSION = "0.14.0"
 WINDOWS = {
     "index": ("全职高手", "index.html", 660, 760),
     "setting": ("设置", "setting.html", 1120, 760),
@@ -427,7 +427,7 @@ class WindowManager:
                     platform = next((name for name, site in SITES.items()
                                      if host in site.hosts), "")
                     if not platform:
-                        return {"running": False, "message": "请打开 BOSS直聘、智联招聘、前程无忧或应届生的页面"}
+                        return {"running": False, "message": "请打开已接入招聘平台的页面"}
                     page = EmbeddedSitePage(self, SITES[platform])
                 if page.login_state() != "logged_in":
                     return {"running": False, "message": f"请先在内置浏览器手动登录{platform}"}
@@ -809,6 +809,8 @@ def main(argv: list[str] | None = None) -> int:
                     for name in ("code.json", "filter.json")]
         required.append(bundle_dir() / "config" / "lagou" / "filter.json")
         required.append(bundle_dir() / "config" / "niuke" / "filter.json")
+        required.append(bundle_dir() / "config" / "guopin" / "filter.json")
+        required.append(bundle_dir() / "gui" / "templates" / "static" / "brand" / "fulltime-mark.svg")
         if not index.is_file() or not official.is_file() or any(not file.is_file() for file in required):
             raise SystemExit("Bundled UI or platform configuration missing")
         print(f"{VERSION}: assets present")

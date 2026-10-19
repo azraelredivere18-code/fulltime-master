@@ -252,7 +252,7 @@ $(function () {
                     filterControl: 'input',
                     formatter: function (value, row) {
                         var text = safeRecordText(value);
-                        return row.attempt_state === 'pending' && ['BOSS直聘', '智联招聘', '前程无忧', '应届生', '猎聘', '拉勾'].includes(row.source) ?
+                        return row.attempt_state === 'pending' && ['BOSS直聘', '智联招聘', '前程无忧', '应届生', '猎聘', '拉勾', '牛客网', '国聘网'].includes(row.source) ?
                             text + ' <button type="button" class="btn btn-outline-primary btn-sm reconcile-apply-record" data-id="' +
                             Number(row.id) + '">核实</button>' : text;
                     }

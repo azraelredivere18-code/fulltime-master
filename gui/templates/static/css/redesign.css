@@ -166,3 +166,116 @@ body, .main-window, .setting-window, .record-window { color:var(--ink); backgrou
 .record-window .record-status.filtered { color:#b4c7e0; background:#2a3a51; }
 @media(max-width:620px) { .app-shell { padding:18px 16px 92px; } .hero-version { display:none; }
   .app-actions { flex-wrap:wrap; padding:9px 16px 12px; } }
+
+/* Mission hub: keep the control surface readable beside a browser window. */
+.main-window {
+  font-family:"Segoe UI","Microsoft YaHei UI","PingFang SC",sans-serif;
+  background-color:#08111e;
+  background-image:
+    linear-gradient(135deg,rgba(25,63,80,.12) 0,transparent 42%),
+    radial-gradient(circle at 96% 2%,rgba(39,173,190,.18),transparent 30%),
+    radial-gradient(circle at 3% 93%,rgba(98,71,174,.14),transparent 33%),
+    repeating-linear-gradient(0deg,transparent 0,transparent 39px,rgba(111,212,229,.025) 40px),
+    #08111e;
+}
+.main-window *, .main-window *::before, .main-window *::after { box-sizing:border-box; }
+.main-window .app-shell { max-width:710px; min-width:0; padding:14px 20px 84px; }
+.main-window .app-hero { gap:13px; padding:2px 2px 12px; margin-bottom:10px; border-color:#2a5368; }
+.main-window .app-mark {
+  width:66px; height:66px; overflow:hidden; transform:none;
+  border:1px solid #3dc4cc; border-radius:15px 3px 15px 3px;
+  background:linear-gradient(145deg,#153b51,#0d1729 70%);
+  box-shadow:0 0 0 3px rgba(42,223,222,.09),inset 0 0 20px rgba(49,218,216,.08),0 10px 26px rgba(0,0,0,.26);
+}
+.main-window .app-mark img { width:62px; height:62px; display:block; object-fit:contain; }
+.main-window .app-hero h1 { font-size:28px; line-height:1.14; letter-spacing:.11em; margin:3px 0 3px; text-shadow:0 0 22px rgba(68,214,232,.19); }
+.main-window .app-hero p { margin:0; line-height:1.45; }
+.main-window .app-hero .eyebrow { color:#67dadb; font-size:10px; letter-spacing:.12em; white-space:normal; }
+.main-window .hero-version {
+  align-self:center; min-width:71px; padding:7px 9px; text-align:center;
+  color:#d3f7ed; background:#112c35; border:1px solid #2b6670;
+  border-radius:3px 9px 3px 9px; font:700 11px/1.45 "Segoe UI","Microsoft YaHei UI",sans-serif;
+  letter-spacing:.02em;
+}
+.main-window .app-panel {
+  padding:12px 18px; margin-bottom:9px;
+  background:linear-gradient(130deg,rgba(23,42,58,.98),rgba(17,27,44,.98));
+  border:1px solid #2c4b61; border-radius:5px 15px 5px 15px;
+  box-shadow:inset 0 1px rgba(163,233,237,.055),0 11px 25px rgba(0,0,0,.18);
+}
+.main-window .app-panel::before { width:68px; height:2px; }
+.main-window .section-heading { margin-bottom:8px; }
+.main-window .section-heading h2 { line-height:1.3; }
+.main-window .section-index { color:#65e7e5; font-size:11px; padding-right:4px; }
+.main-window .section-heading .panel-kicker { color:#8fb2c4; font-size:10px; }
+.main-window .field-label { color:#dcecf5; margin:2px 0 6px; }
+.main-window .platform-row { align-items:stretch; gap:8px; }
+.main-window .platform-row select {
+  flex:1 1 auto; min-width:0; height:42px; padding:0 12px;
+  background:#0c1829; border:1px solid #466d81; color:#f0f9ff;
+  font-weight:650; font-size:14px;
+}
+.main-window .platform-row select option, .main-window .platform-row select optgroup { background:#101c31; color:#e8f7ff; }
+.main-window .platform-row button { flex:0 0 auto; min-height:42px; padding:0 13px; font-size:12px; }
+.main-window .status-line {
+  display:inline-flex; max-width:100%; margin:8px 0 4px; padding:4px 9px;
+  color:#d2e9f1; background:rgba(10,29,39,.75); border:1px solid #315160;
+  border-radius:4px 10px 4px 10px; line-height:1.4;
+}
+.main-window .status-line #login-status { overflow-wrap:anywhere; }
+.main-window .connection-note, .main-window .mode-hint { color:#adc4d6; font-size:12px; line-height:1.55; }
+.main-window .mission-panel {
+  background:linear-gradient(130deg,rgba(21,62,70,.96),rgba(20,32,51,.98) 70%);
+  border-color:#3b7980;
+}
+.main-window .mission-copy { margin:3px 0 5px; }
+.main-window .mission-copy strong { font-size:16px; }
+.main-window .mission-copy small { color:#c0d5df; }
+.main-window .mission-icon { width:43px; height:43px; background:linear-gradient(140deg,#6cf0e6,#32cbdc); }
+.main-window .main-action { height:46px; margin-top:8px; }
+.main-window .run-panel .task-show { overflow-wrap:anywhere; line-height:1.6; }
+.main-window .run-panel .status-show {
+  max-height:130px; overflow:auto; margin-top:8px;
+  color:#e2eef6; background:#0b1929; border-color:#38596b; border-left-color:#b8f25b;
+  overflow-wrap:anywhere;
+}
+.main-window .app-actions {
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); align-items:stretch; gap:8px;
+  width:100%; max-width:710px; padding:10px 20px 12px;
+  background:rgba(8,17,30,.97); border-top-color:#2a5368;
+}
+.main-window .app-actions .btn { flex:none; min-width:0; min-height:36px; margin:0; padding:6px 7px; line-height:1.25; font-size:12px; white-space:normal; }
+.main-window .app-actions .btn-link { color:#a5eaec; text-decoration:none; border:1px solid #335b69; }
+.main-window .app-actions .btn-link:hover { color:#f2ffff; background:#163a47; }
+.main-window :is(button,select):focus-visible { outline:2px solid #b8f25b; outline-offset:2px; }
+.main-window .modal-body { white-space:pre-line; overflow-wrap:anywhere; }
+@media (max-width:580px) {
+  .main-window .app-shell { padding:14px 15px 84px; }
+  .main-window .app-hero { padding-bottom:11px; }
+  .main-window .hero-version { display:none; }
+  .main-window .app-actions { padding:9px 15px 11px; }
+  .main-window .app-actions .btn { min-height:37px; }
+}
+@media (max-width:450px) {
+  .main-window .app-shell { padding-bottom:125px; }
+  .main-window .app-actions { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:430px) {
+  .main-window .app-shell { padding:14px 12px 127px; }
+  .main-window .app-mark { width:64px; height:64px; }
+  .main-window .app-mark img { width:58px; height:58px; }
+  .main-window .app-hero h1 { font-size:25px; }
+  .main-window .app-hero .eyebrow { font-size:9px; letter-spacing:.07em; }
+  .main-window .app-panel { padding:13px 14px; }
+  .main-window .platform-row { flex-wrap:wrap; }
+  .main-window .platform-row select, .main-window .platform-row button { flex:1 1 100%; }
+  .main-window .app-actions { padding-left:12px; padding-right:12px; }
+}
+@media (max-height:660px) {
+  .main-window .app-shell { padding-top:12px; }
+  .main-window .app-hero { margin-bottom:9px; padding-bottom:11px; }
+  .main-window .app-panel { margin-bottom:8px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .main-window *, .main-window *::before, .main-window *::after { transition-duration:.01ms !important; animation-duration:.01ms !important; }
+}

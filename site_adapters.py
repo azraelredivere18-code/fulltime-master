@@ -35,7 +35,7 @@ class Site:
 
 SITES = {
     "智联招聘": Site(
-        "智联招聘", "https://www.zhaopin.com/sou/jl530", frozenset({"www.zhaopin.com", "zhaopin.com", "passport.zhaopin.com"}),
+        "智联招聘", "https://www.zhaopin.com/jobs/", frozenset({"www.zhaopin.com", "zhaopin.com", "passport.zhaopin.com"}),
         "/sou/", ".job-card, .joblist-box__item",
         (".vue-clamp__text", ".job-card__job-name", ".job-card__name", ".jobinfo__name", "a[href*='/jobdetail/']"),
         (".job-card__company-name", ".companyinfo__name"),
@@ -44,7 +44,7 @@ SITES = {
         (".jobinfo__other-info-item:nth-of-type(2)",),
         (".jobinfo__other-info-item:nth-of-type(3)",),
         ".job-description__content, .describtion-card__detail-content",
-        ".a-button.a--bordered.a--filled",
+        "button.a-button.job-detail-summary__apply.a--bordered, .a-button.a--bordered.a--filled",
     ),
     "前程无忧": Site(
         "前程无忧", "https://we.51job.com/pc/search", frozenset({"we.51job.com", "www.51job.com", "login.51job.com"}),
@@ -101,6 +101,34 @@ SITES = {
         (".job-info-item:nth-of-type(2)",), (".job-info-item:nth-of-type(3)",),
         ".job-detail-word", "button.el-button--primary.el-button--xl",
     ),
+    "国聘网": Site(
+        "国聘网", "https://www.iguopin.com/job",
+        frozenset({"www.iguopin.com", "iguopin.com"}),
+        "/job", "a[href*='/job/detail']",
+        (".job-title", "[class*='job-title']"),
+        (".company-name", "[class*='company-name']"),
+        (".job-city", "[class*='job-city']"),
+        (".job-salary", "[class*='salary']"),
+        (".job-experience", "[class*='experience']"),
+        (".job-education", "[class*='education']"),
+        ".job-detail-content,[class*='job-detail-content']",
+        "button,[role=button],a",
+    ),
+}
+
+# These paths are verified on public Zhaopin search pages.  Using a city's
+# own search route avoids relying on the search page's changing city popover.
+# Other cities still use the visible chooser below and fail closed if it moves.
+ZHAOPIN_CITY_PATHS = {
+    "北京": "jl530", "上海": "jl538", "杭州": "jl653",
+    "深圳": "jl765", "广州": "jl763", "南昌": "jl691",
+}
+
+# Discovery-only platforms.  Their public job lists exist, but the logged-in
+# submission dialog and success receipt have not been calibrated in WebView2.
+# Keep them out of SITES so no automatic-application task can select them.
+BROWSER_ONLY_SITES = {
+    "就业在线": "https://www.jobonline.cn/",
 }
 
 DETAIL_METADATA_SELECTORS = {
@@ -158,6 +186,15 @@ DETAIL_METADATA_SELECTORS = {
         "employment_type": (".job-type", "[data-job-type]"),
         "recruitment_track": (".recruitment-track", "[data-recruitment-type]"),
     },
+    "国聘网": {
+        "company": (".company-name", "[class*='company-name']"),
+        "area": (".job-city", "[class*='job-city']"),
+        "salary": (".job-salary", "[class*='salary']"),
+        "experience": (".job-experience", "[class*='experience']"),
+        "education": (".job-education", "[class*='education']"),
+        "employment_type": (".job-type", "[data-job-type]"),
+        "recruitment_track": (".recruitment-track", "[data-recruitment-type]"),
+    },
 }
 
 
@@ -176,6 +213,8 @@ def valid_site_url(site: Site, url: str, *, detail: bool = False) -> bool:
             return parsed.path.startswith("/jobs/") and parsed.path != "/jobs/"
         if site.name == "牛客网":
             return parsed.path.startswith("/jobs/detail/")
+        if site.name == "国聘网":
+            return parsed.path.startswith("/job/detail") and bool(parsed.query)
         return "/jobdetail/" in parsed.path or "/job_detail/" in parsed.path
     return True
 
@@ -228,6 +267,20 @@ class EmbeddedSitePage:
               return 'unknown';
             })()""")
             return state if state in {"logged_in", "logged_out"} else "unknown"
+        if self.site.name == "国聘网":
+            state = self._window().run_js("""(() => {
+              const visible=e=>!!(e&&e.getClientRects().length);
+              const text=e=>(e.innerText||e.textContent||'').trim();
+              const body=(document.body&&document.body.innerText||'').slice(0,6000);
+              if(/安全验证|访问验证|请完成验证/.test(body))return 'verification';
+              const head=document.querySelector('header,nav,[class*=header]')||document.body;
+              if(Array.from(head.querySelectorAll('a,button,[role=button]')).filter(visible)
+                .some(e=>['登录','注册','登录/注册'].includes(text(e))))return 'logged_out';
+              if(Array.from(head.querySelectorAll('.user-avatar,.user-info,[class*=avatar],[class*=user-name]'))
+                .some(visible))return 'logged_in';
+              return 'unknown';
+            })()""")
+            return state if state in {"logged_in", "logged_out", "verification"} else "unknown"
         script = """(() => {
           const visible=e=>!!(e&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden');
           const text=e=>(e.innerText||e.textContent||'').trim();
@@ -248,21 +301,49 @@ class EmbeddedSitePage:
         result = self._window().run_js(script)
         return result if result in {"logged_in", "logged_out", "verification"} else "unknown"
 
+    def _zhaopin_visible_city(self, city: str) -> bool:
+        result = self._window().run_js("""(() => {
+          const city=CITY;
+          const candidates=Array.from(document.querySelectorAll('button,span,div'))
+            .filter(e=>e.children.length===0&&(e.innerText||e.textContent||'').trim()===city)
+            .filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&
+              r.top>=0&&r.top<Math.min(260,innerHeight*.38)&&
+              !!e.closest('header,nav,[class*=filter],[class*=search],[class*=city],[class*=region],.s-region')&&
+              !e.closest('.job-card,.joblist-box__item');});
+          return candidates.length===1;
+        })()""".replace("CITY", _js(city)))
+        return result is True
+
     def navigate_search(self, keyword: str, city: str, city_code: str,
                         employment_type: str = "full_time",
                         recruitment_track: str = "all") -> bool:
+        if self.site.name == "国聘网":
+            # 国聘's own search links use /job/list?keyword=... .  The result
+            # parser retains only cards with an explicit matching area.
+            if not keyword.strip():
+                raise ValueError("国聘搜索关键词不能为空")
+            return self.get("https://www.iguopin.com/job/list?keyword=" + quote(keyword.strip()))
         if self.site.name == "牛客网":
             url = ("https://www.nowcoder.com/jobs/school/jobs" if recruitment_track == "campus"
                    else "https://www.nowcoder.com/jobs/intern/center" if employment_type == "internship"
                    else "https://www.nowcoder.com/jobs/fulltime/center")
             self.get(url)
             result = self._window().run_js("""(() => {
-              const input=document.querySelector('.input-search-filter .el-input__inner');
-              if(!input||!input.getClientRects().length)return false;
+              const visible=e=>!!(e&&e.getClientRects().length&&!e.disabled);
+              const inputs=Array.from(document.querySelectorAll(
+                'input[placeholder*="公司名或职位名"],input[placeholder*="公司名或岗位"],input[placeholder*="公司名或职位"],.input-search-filter .el-input__inner'))
+                .filter(visible);
+              if(inputs.length!==1)return false;
+              const input=inputs[0];
               input.focus();
               Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,KEYWORD);
               input.dispatchEvent(new Event('input',{bubbles:true}));
+              input.dispatchEvent(new Event('change',{bubbles:true}));
               input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',code:'Enter',bubbles:true}));
+              const region=input.closest('form,[class*=search],[class*=Search]');
+              const buttons=region?Array.from(region.querySelectorAll('button,[role=button]'))
+                .filter(e=>visible(e)&&/^(搜索|查询)$/.test((e.innerText||e.textContent||'').trim())):[];
+              if(buttons.length===1)buttons[0].click();
               return true;
             })()""".replace("KEYWORD", _js(keyword)))
             if result is not True:
@@ -277,37 +358,56 @@ class EmbeddedSitePage:
         if self.site.name == "应届生":
             return self.get(self.site.home + "?jobarea=" + quote(city_code) + "&keyword=" + quote(keyword))
         # The original 智联 city table has province labels, not URL codes.
-        self.get(self.site.home)
-        result = self._window().run_js("""(() => {
-          let input=document.querySelector('.s-region__search input');
-          if(!input||!input.getClientRects().length){
-            const opener=document.querySelector('.s-region__choose,.s-region__text,.s-region');
-            if(opener)opener.click();
-            input=document.querySelector('.s-region__search input');
-          }
-          if(!input||!input.getClientRects().length) return 'city_input_missing';
+        # Prefer verified city routes for the cities shown in the task UI.
+        city_path = ZHAOPIN_CITY_PATHS.get(city)
+        self.get("https://www.zhaopin.com/sou/" + city_path if city_path else self.site.home)
+        selected = self._zhaopin_visible_city(city)
+        if not selected:
+            result = self._window().run_js("""(() => {
+          const visible=e=>!!(e&&e.getClientRects().length);
+          if(Array.from(document.querySelectorAll('.s-region__search input,input[placeholder*="搜索城市名"]'))
+            .some(visible))return 'city_open';
+          const opener=document.querySelector('.s-region__choose,.s-region__text,.s-region')||
+            Array.from(document.querySelectorAll('button,[role=button],span'))
+              .find(e=>visible(e)&&/^(请选择地区|地点|地区)$/.test((e.innerText||'').trim()));
+          if(!opener)return 'city_input_missing';
+          opener.click();return 'city_open';
+        })()""")
+            if result != "city_open":
+                raise RuntimeError("智联城市选择控件未找到；请在浏览器手动选择城市后重试")
+            time.sleep(0.25)
+            result = self._window().run_js("""(() => {
+          const input=Array.from(document.querySelectorAll('.s-region__search input,input[placeholder*="搜索城市名"]'))
+            .find(e=>e.getClientRects().length);
+          if(!input)return 'city_input_missing';
           input.focus();
           Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,CITY);
           input.dispatchEvent(new Event('input',{bubbles:true}));
           return 'city_input_ready';
         })()""".replace("CITY", _js(city)))
-        if result != "city_input_ready":
-            raise RuntimeError("智联城市选择控件未找到；请在浏览器手动选择城市后重试")
-        time.sleep(0.4)
-        result = self._window().run_js("""(() => {
+            if result != "city_input_ready":
+                raise RuntimeError("智联城市选择控件未找到；请在浏览器手动选择城市后重试")
+            time.sleep(0.4)
+            result = self._window().run_js("""(() => {
           const city=CITY;
           const visible=e=>!!(e&&e.getClientRects().length);
-          const matches=Array.from(document.querySelectorAll('.s-region__list li,.s-region__result li,.s-region__city li'))
+          const matches=Array.from(document.querySelectorAll('.s-region__list li,.s-region__result li,.s-region__city li,[class*=city] li,[class*=region] li'))
             .filter(e=>visible(e)&&(e.innerText||'').trim()===city);
           if(matches.length!==1) return 'city_ambiguous';
           matches[0].click(); return 'city_selected';
         })()""".replace("CITY", _js(city)))
-        if result != "city_selected":
-            raise RuntimeError("智联未找到唯一的目标城市；请在浏览器手动选择城市后重试")
-        time.sleep(0.5)
+            if result != "city_selected":
+                raise RuntimeError("智联未找到唯一的目标城市；请在浏览器手动选择城市后重试")
+            time.sleep(0.5)
+        if not self._zhaopin_visible_city(city):
+            raise RuntimeError("智联当前筛选栏未确认目标城市；请在浏览器手动选择后重试")
         result = self._window().run_js("""(() => {
-          const input=document.querySelector('.query-sug__input,.query-search__content-input');
-          if(!input) return 'keyword_input_missing';
+          const visible=e=>!!(e&&e.getClientRects().length&&!e.disabled);
+          const inputs=Array.from(document.querySelectorAll(
+            '#keywordInput,.query-sug__input,.query-search__content-input,input[placeholder*="输入职位"],input[placeholder*="搜索职位"]'))
+            .filter(visible);
+          if(inputs.length!==1) return 'keyword_input_missing';
+          const input=inputs[0];
           input.focus();
           Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,KEYWORD);
           input.dispatchEvent(new Event('input',{bubbles:true}));
@@ -317,30 +417,78 @@ class EmbeddedSitePage:
         })()""".replace("KEYWORD", _js(keyword)))
         if result != "search_requested":
             raise RuntimeError("智联关键词输入框未找到；请检查当前网页")
+        time.sleep(0.25)
+        if not self._zhaopin_visible_city(city):
+            raise RuntimeError("智联搜索后目标城市未保持选中；本次未读取或投递职位")
         return True
 
     def eles(self, locator: str, timeout: float = 0) -> list[dict[str, str]]:
         if locator != "css:" + self.site.cards:
             raise ValueError("不支持的职位卡片选择器")
+        if self.site.name == "国聘网":
+            # The public route advertises /job/detail links and shows title,
+            # area, salary and track in the same result row.  The actual DOM
+            # classes are not calibrated; absent links are never fabricated.
+            script = r"""(() => {
+              const seen=new Set(), result=[];
+              const links=Array.from(document.querySelectorAll('a[href*="/job/detail"]'))
+                .filter(a=>a.getClientRects().length);
+              for(const a of links){
+                const href=a.href||'';
+                if(!/^https:\/\/www\.iguopin\.com\/job\/detail(?:\/|\?)/.test(href)||seen.has(href))continue;
+                seen.add(href);
+                const row=a.closest('article,li,[class*=job-card],[class*=job-item],[class*=job-list-item]')||
+                  a.parentElement&&a.parentElement.parentElement;
+                if(!row)continue;
+                const raw=(row.innerText||'').trim();
+                const title=(a.innerText||a.textContent||'').trim().split('\n')[0]||
+                  ((row.querySelector('[class*=title],h2,h3')||{}).innerText||'').trim();
+                if(!title||title.length>100)continue;
+                const pick=s=>{const e=row.querySelector(s);return e?(e.innerText||e.textContent||'').trim():'';};
+                const area=pick('.job-city,[class*=job-city]')||(raw.match(/「([^」]{1,45})」/)||[])[1]||'';
+                const salary=pick('.job-salary,[class*=salary]')||
+                  (raw.match(/(?:面议|\d+(?:\.\d+)?\s*[~\-]\s*\d+(?:\.\d+)?\s*(?:K|千|万|元\/天|元))/)||[])[0]||'';
+                const track=(raw.match(/(?:社招|校招|实习|见习|兼职|公职类)/)||[])[0]||'';
+                const experience=(raw.match(/(?:在校生|应届生|经验不限|\d+(?:-\d+)?年(?:以上|以内)?)/)||[])[0]||'';
+                const education=(raw.match(/(?:中专\/中技|高中|大专|本科|硕士|博士|学历不限)/)||[])[0]||'';
+                result.push({title,company:pick('.company-name,[class*=company-name]'),area,salary,
+                  experience,education,employment_type:track==='实习'?'实习':track==='兼职'?'兼职':
+                    track==='社招'||track==='校招'?'全职':'',recruitment_track:track,
+                  summary:raw.slice(0,1600),link:href});
+              }
+              return result;
+            })()"""
+            result = self._window().run_js(script)
+            if not isinstance(result, list) or any(not isinstance(x, dict) for x in result):
+                raise RuntimeError("国聘职位链接未能安全读取；请导出页面诊断")
+            return result
         selectors = {k: getattr(self.site, k) for k in
                      ("title", "company", "area", "salary", "experience", "education")}
         script = """(() => {
           const pick=(card,sels)=>{for(const s of sels){const e=card.querySelector(s);
             const t=e&&(e.innerText||e.textContent||'').trim();if(t)return t;}return '';};
           return Array.from(document.querySelectorAll(CARDS)).map(card=>{
-            const a=Array.from(card.querySelectorAll('a[href]')).find(a=>/jobdetail|job_detail|\\/job\\/|\\/jobs\\/|\\/a\\//.test(a.href));
+            const anchors=[...Array.from(card.querySelectorAll('a[href]'))];
+            const wrapper=card.closest('a[href]');if(wrapper)anchors.push(wrapper);
+            const a=anchors.find(a=>/jobdetail|job_detail|\\/job\\/|\\/jobs\\/|\\/a\\//.test(a.href));
+            const direct=card.getAttribute('data-href')||card.getAttribute('data-url')||'';
             const kind=pick(card,['.job-type','[data-job-type]','[class*=job-type]']);
             const track=pick(card,['.recruitment-track','[data-recruitment-type]']);
             return {title:pick(card,SEL.title),company:pick(card,SEL.company),
               area:pick(card,SEL.area),salary:pick(card,SEL.salary),
               experience:pick(card,SEL.experience),education:pick(card,SEL.education),
               employment_type:kind,recruitment_track:track,
-              hr_title:'',activity:'',summary:(card.innerText||'').trim(),link:a?a.href:''};
+              hr_title:'',activity:'',summary:(card.innerText||'').trim(),
+              link:a?a.href:direct.startsWith('https://')?direct:''};
           });
         })()""".replace("CARDS", _js(self.site.cards)).replace("SEL", _js(selectors)).replace("SITE", _js(self.site.name))
         result = self._window().run_js(script)
         if not isinstance(result, list) or any(not isinstance(x, dict) for x in result):
             raise RuntimeError("网站没有返回可读取的职位卡片")
+        if self.site.name == "智联招聘" and result and not any(
+                valid_site_url(self.site, str(card.get("link") or ""), detail=True)
+                for card in result):
+            raise RuntimeError("智联职位卡片未暴露可核验详情链接；请导出页面诊断后校准")
         return result
 
     def diagnostics(self) -> dict[str, Any]:
@@ -353,8 +501,10 @@ class EmbeddedSitePage:
           const fields={};
           for(const [name,options] of Object.entries(selectors))
             fields[name]=options.filter(s=>first&&first.querySelector(s)).slice(0,5);
-          const detailLink=first&&Array.from(first.querySelectorAll('a[href]'))
-            .find(a=>/jobdetail|job_detail|\\/job\\/|\\/jobs\\/|\\/a\\//.test(a.href));
+          const cardLinks=first?[...(first.matches('a[href]')?[first]:[]),
+            ...Array.from(first.querySelectorAll('a[href]')),
+            ...(first.closest('a[href]')?[first.closest('a[href]')]:[])]:[];
+          const detailLink=cardLinks.find(a=>/jobdetail|job_detail|\\/job\\/|\\/jobs\\/|\\/a\\//.test(a.href));
           const buttons=Array.from(document.querySelectorAll('button,a')).filter(visible)
             .map(e=>({text:(e.innerText||'').trim(),selector:e.tagName.toLowerCase()+
               (e.className&&typeof e.className==='string'?'.'+e.className.trim().split(/\\s+/).slice(0,3).join('.'): '')}))
@@ -375,18 +525,32 @@ class EmbeddedSitePage:
             .filter(e=>visible(e)&&e.children.length===0&&
               /^(投递成功|申请成功|已向对方发送简历和打招呼语)$/.test((e.innerText||'').trim())).length;
           const url=new URL(location.href);
+          const cardDataAttrs=first?Array.from(first.attributes).map(a=>a.name)
+            .filter(n=>n.startsWith('data-')).slice(0,10):[];
           return {host:url.hostname,path:url.pathname,cardCount:count(CARDS),
             applyButtonCount:count(APPLY),detailCount:count(DETAIL),
-            fields:fields,firstCardLinkHost:detailLink?new URL(detailLink.href).hostname:'',
+            fields:fields,firstCardTag:first?first.tagName.toLowerCase():'',
+            firstCardClass:first&&typeof first.className==='string'?first.className.slice(0,100):'',
+            firstCardDataAttributes:cardDataAttrs,
+            firstCardLinkHost:detailLink?new URL(detailLink.href).hostname:'',
             firstCardLinkPath:detailLink?new URL(detailLink.href).pathname:'',
             buttons:buttons,dialogs:dialogs,successMarkers:successMarkers,
-            keywordInputCount:count('#keywordInput,.query-sug__input,.query-search__content-input'),
-            cityInputCount:count('.s-region__search input')};
+            keywordInputCount:count(KEYWORD_INPUT),cityInputCount:count(CITY_INPUT)};
         })()""".replace("CARDS", _js(self.site.cards)).replace("APPLY", _js(self.site.apply))
         script = script.replace("DETAIL", _js(self.site.detail)).replace("SEL", _js({
             key: getattr(self.site, key) for key in
             ("title", "company", "area", "salary", "experience", "education")
         }))
+        script = script.replace("KEYWORD_INPUT", _js(
+            'input[placeholder*="公司名或职位名"],input[placeholder*="公司名或职位"],.input-search-filter .el-input__inner'
+            if self.site.name == "牛客网" else
+            'input[placeholder*="职位或单位关键词"],input[placeholder*="职位"]'
+            if self.site.name == "国聘网" else
+            '#keywordInput,.query-sug__input,.query-search__content-input,input[placeholder*="输入职位"],input[placeholder*="搜索职位"]'))
+        script = script.replace("CITY_INPUT", _js(
+            '.s-region__search input,input[placeholder*="搜索城市名"]'
+            if self.site.name == "智联招聘" else
+            'input[placeholder*="城市"],input[placeholder*="地区"]'))
         result = self._window().run_js(script)
         if not isinstance(result, dict):
             raise RuntimeError("未能读取当前网页控件结构")
@@ -418,7 +582,7 @@ class EmbeddedSitePage:
             return "away"
         if any(x in current.path for x in ("verify", "login", "security")):
             return "verification"
-        if current.path != expected.path:
+        if current.path != expected.path or (self.site.name == "国聘网" and current.query != expected.query):
             return "away"
         script = """(() => {
           const visible=e=>!!(e&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden');
@@ -429,7 +593,7 @@ class EmbeddedSitePage:
           if(/请完善简历/.test(body))return 'needs_resume';
           if(/需补充企业要求的信息/.test(body))return 'needs_confirmation';
           const buttons=Array.from(document.querySelectorAll(APPLY)).filter(visible);
-          if(buttons.filter(b=>/已申请|已投递|已投简历/.test(text(b))).length===1)return 'sent';
+          if(SITE!=='国聘网'&&buttons.filter(b=>/已申请|已投递|已投简历/.test(text(b))).length===1)return 'sent';
           const dialogs=Array.from(document.querySelectorAll(DIALOGS)).filter(visible);
           if(dialogs.some(d=>/请选择.*简历|选择简历|选择附件简历|确认投递|投递确认|确认申请|打招呼/.test(text(d))))
             return 'needs_confirmation';
@@ -438,12 +602,13 @@ class EmbeddedSitePage:
             visible(e)&&e.children.length===0&&
             /^(投递成功|申请成功|已向对方发送简历和打招呼语)$/.test(text(e))))return 'sent';
           return 'unknown';
-        })()""".replace("APPLY", _js(self.site.apply)).replace("DIALOGS", _js(
+        })()""".replace("APPLY", _js(self.site.apply)).replace("SITE", _js(self.site.name)).replace("DIALOGS", _js(
             ".a-modal,.deliver-greeting-modal,[role=dialog]" if self.site.name == "智联招聘"
             else ".operate-popup,.el-dialog,[role=dialog]" if self.site.name == "应届生"
             else ".ant-modal,[role=dialog]" if self.site.name == "猎聘"
             else ".position-modal,[role=dialog]" if self.site.name == "拉勾"
             else ".el-dialog,[role=dialog]" if self.site.name == "牛客网"
+            else ".ant-modal,[role=dialog]" if self.site.name == "国聘网"
             else "#apply_now,.dialog,.modal,[role=dialog],.el-dialog"))
         state = self._window().run_js(script)
         return state if state in {"sent", "verification", "daily_limit", "needs_resume", "needs_confirmation"} else "unknown"
@@ -526,6 +691,9 @@ class EmbeddedSitePage:
             script = """(() => {
               const visible=e=>!!(e&&e.getClientRects().length&&!e.disabled);
               const candidates=Array.from(document.querySelectorAll(APPLY)).filter(visible);
+              if(candidates.some(e=>{const a=e.closest('a[href]');
+                return a&&new URL(a.href,location.href).hostname!==location.hostname;}))
+                return {state:'external'};
               if(candidates.some(e=>/绑定官网账号并投递|前往官网投递/.test((e.innerText||e.textContent||'').trim())))
                 return {state:'external'};
               const els=candidates.filter(e=>

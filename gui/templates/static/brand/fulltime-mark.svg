@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="全职高手徽章">
+  <defs>
+    <linearGradient id="shell" x1="14" y1="7" x2="79" y2="88" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1f4765"/>
+      <stop offset=".5" stop-color="#0d263c"/>
+      <stop offset="1" stop-color="#0b172b"/>
+    </linearGradient>
+    <linearGradient id="energy" x1="23" y1="19" x2="72" y2="71" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#a6fff5"/>
+      <stop offset=".48" stop-color="#32e0e0"/>
+      <stop offset="1" stop-color="#5cb9ff"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <path d="M48 5 83 19l-3 41-32 30-32-30-3-41L48 5Z" fill="url(#shell)" stroke="#317c93" stroke-width="2"/>
+  <path d="M48 11 76 22l-2 35-26 25-26-25-2-35L48 11Z" fill="none" stroke="#1e576f" stroke-width="1.4"/>
+  <path d="M26 19h-9v10M70 19h9v10M20 67l10 10M76 67 66 77" fill="none" stroke="#a9f357" stroke-width="2.6" stroke-linecap="square"/>
+  <path d="m29 37 19-15 19 15M34 44h28M48 44v19M31 64h34" fill="none" stroke="url(#energy)" stroke-width="5.5" stroke-linecap="square" stroke-linejoin="miter" filter="url(#glow)"/>
+  <path d="m65 56 7-8v12l-7 7" fill="#bdf75a"/>
+  <path d="M36 73h24" stroke="#317c93" stroke-width="2" stroke-linecap="square"/>
+</svg>
